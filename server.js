@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+const { Pool } = require('pg'); // Tambahkan ini di deretan const require
 const xlsx = require('xlsx');
 const fs = require('fs');
 const path = require('path');
@@ -13,10 +14,22 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // MENYURUH NODE.JS MENAMPILKAN INDEX.HTML DARI FOLDER PUBLIC
 app.use(express.static(path.join(__dirname, 'public')));
 
-// KONEKSI DATABASE (Membaca dari Environment Variable Render/Supabase)
+// KONEKSI DATABASE (Lebih aman dan standar produksi)
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://postgres:123@localhost:5432/db_rangga3',
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false // Wajib untuk Supabase
+    }
+});
+
+// Tes koneksi agar Anda tahu apakah sudah berhasil atau belum di log Railway
+pool.connect((err, client, done) => {
+    if (err) {
+        console.error('Gagal terhubung ke database:', err.stack);
+    } else {
+        console.log('Berhasil terhubung ke Supabase!');
+    }
+    done();
 });
 
 // OTOMATIS BUAT TABEL USERS (Jika Belum Ada)
