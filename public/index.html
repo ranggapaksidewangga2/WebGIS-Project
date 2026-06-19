@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web GIS Minimalist Light - Flight Planner</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    
+    <style>
+        /* TEMA MINIMALIS TERANG (PUTIH) */
+        :root {
+            --bg-base: #ffffff;
+            --bg-panel: #f8f9fa;
+            --bg-hover: #e2e8f0;
+            --border-color: #cbd5e1;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        body { 
+            margin: 0; padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            overflow: hidden; 
+            background-color: var(--bg-base); 
+            color: var(--text-main); 
+        }
+
+        /* GAYA UMUM ELEMENT */
+        select, input, .modal-input, textarea { 
+            background: var(--bg-base); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-main); 
+            border-radius: 4px; 
+            padding: 8px;
+            font-family: inherit;
+        }
+        select:focus, input:focus, textarea:focus { outline: none; border-color: var(--text-muted); }
+        button { font-family: inherit; cursor: pointer; transition: 0.2s ease; border-radius: 4px; }
+        
+        /* HEADER PUTIH */
+        .top-bar { 
+            background: var(--bg-base); padding: 12px 20px; font-size: 15px; font-weight: 700; 
+            letter-spacing: 1px; border-bottom: 1px solid var(--border-color); 
+            display: flex; align-items: center; text-transform: uppercase;
+        }
+        .header-controls { 
+            background: var(--bg-panel); padding: 10px 15px; 
+            display: flex; align-items: flex-start; justify-content: space-between; 
+            font-size: 12px; border-bottom: 1px solid var(--border-color); 
+        }
+        .btn-header { background: var(--bg-base); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; font-weight: 500;}
+        .btn-header:hover { background: var(--bg-hover); }
+
+        #map { height: calc(100vh - 110px); width: 100%; background: #e5e5e5; z-index: 1; }
+        #koordinat-panel { position: absolute; bottom: 5px; left: 5px; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; font-size: 10px; z-index: 1001; }
+
+        /* SEARCH OVERLAY PANEL */
+        #search-panel {
+            position: absolute; top: 100px; right: 60px; z-index: 1000;
+            background: rgba(255, 255, 255, 0.95); padding: 6px; border-radius: 6px;
+            border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex; gap: 5px; backdrop-filter: blur(5px);
+        }
+        #search-panel input { width: 150px; font-size: 11px; padding: 6px 10px; }
+        #search-panel button { padding: 6px 10px; background: var(--bg-base); border: 1px solid var(--border-color); color: var(--text-main); font-size: 12px; }
+        #search-panel button:hover { background: var(--bg-hover); }
+
+        /* LOGIN OVERLAY */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-panel); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: var(--bg-base); padding: 40px; border-radius: 8px; width: 300px; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center;}
+        .login-box h2 { margin-top: 0; margin-bottom: 25px; font-weight: 700; font-size: 18px; letter-spacing: 1px; text-transform: uppercase;}
+        .login-tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px; font-weight: 600; border-bottom: 2px solid transparent; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .login-input { width: 100%; margin-bottom: 15px; box-sizing: border-box;}
+        .login-btn { width: 100%; padding: 12px; background: var(--text-main); color: var(--bg-base); font-weight: 600; border: none;}
+        .login-btn:hover { background: #334155; }
+        .user-badge { font-size: 10px; border: 1px solid var(--border-color); background: var(--bg-base); padding: 3px 8px; border-radius: 4px; margin-left: 10px; display: none; font-weight: 600;}
+        .online-dot { height: 8px; width: 8px; background-color: #10b981; border-radius: 50%; display: inline-block; }
+
+        /* FLOATING TOOLBAR BAWAH */
+        #floating-toolbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 1000; }
+        .btn-float { 
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px);
+            border: 1px solid var(--border-color); color: var(--text-main); 
+            width: 44px; height: 44px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn-float:hover { background: var(--bg-hover); }
+        .btn-float .icon { font-size: 14px; }
+        .btn-float .label { font-size: 7px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+
+        /* TABLE OF CONTENT (TOC) */
+        #toc-sidebar { position: absolute; top: 120px; left: 15px; width: 240px; max-height: calc(100vh - 150px); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; overflow-y: auto; display: block; }
+        .toc-header { padding: 12px 15px; background: var(--bg-panel); font-weight: 700; border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; z-index: 2; }
+        .toc-card { margin: 10px; background: var(--bg-base); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; }
+        .toc-card-title { font-size: 11px; font-weight: 600; margin-bottom: 8px;}
+        .toc-controls { display: flex; gap: 4px; margin-bottom: 8px; }
+        .btn-toc-action { flex: 1; border: 1px solid var(--border-color); background: var(--bg-panel); color: var(--text-main); padding: 4px 2px; font-size: 9px; font-weight: 600; }
+        .btn-toc-action:hover { background: var(--bg-hover); }
+        .simbol-container { display: flex; align-items: center; gap: 6px; font-size: 10px; margin-bottom: 6px; color: var(--text-muted); font-weight: 500;}
+        .color-box { width: 10px; height: 10px; border: 1px solid var(--border-color); border-radius: 2px; }
+        .toc-slider-container { font-size: 9px; color: var(--text-muted); font-weight: 500; margin-top: 5px; display: flex; align-items: center; gap: 5px;}
+        .slider { flex: 1; height: 3px; background: var(--border-color); appearance: none; outline: none; border-radius: 2px;}
+        .slider::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; background: var(--text-main); border-radius: 50%; cursor: pointer;}
+
+        /* MODALS */
+        .modal-overlay { display: none; position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-box { background: var(--bg-base); margin: 6% auto; width: 420px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15);}
+        .modal-box-header { padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-panel); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between;}
+        .modal-box-body { padding: 20px; font-size: 12px; max-height: 75vh; overflow-y: auto; }
+        .modal-btn { padding: 10px; border: 1px solid var(--border-color); background: var(--bg-panel); font-weight: 600; color: var(--text-main); width: 100%; margin-top: 10px; text-transform: uppercase; font-size: 11px;}
+        .modal-btn:hover { background: var(--bg-hover); }
+
+        .modal-sql { background: var(--bg-base); margin: 3% auto; padding: 20px; width: 85%; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15);}
+        .btn-query-nav { background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; margin-right: 5px; margin-bottom: 5px; font-size: 11px; font-weight: 600; text-transform: uppercase;}
+        .btn-query-nav:hover { background: var(--bg-hover); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 8px; border-bottom: 1px solid var(--border-color); text-align: left; font-size: 11px; }
+        th { background: var(--bg-panel); font-weight: 600; text-transform: uppercase;}
+
+        .side-panel { position: absolute; bottom: 30px; right: 10px; z-index: 1000; background: rgba(255,255,255,0.95); padding: 15px; border-radius: 6px; width: 220px; display: none; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+        
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--bg-base); color: var(--text-main); border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 4px; }
+        .leaflet-popup-content { margin: 10px; font-size: 11px; }
+        .popup-table { width: 100%; border-collapse: collapse; }
+        .popup-table td { padding: 4px 5px; border-bottom: 1px solid var(--border-color); }
+        .popup-table td:first-child { font-weight: 600; color: var(--text-muted); width: 40%; }
+        .leaflet-bar { border: 1px solid var(--border-color) !important; border-radius: 4px !important; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;}
+        .leaflet-bar a { background-color: var(--bg-base) !important; color: var(--text-main) !important; border-bottom: 1px solid var(--border-color) !important; }
+        .leaflet-bar a:hover { background-color: var(--bg-hover) !important; }
+
+        /* DRONE / BATIMETRI INPUT GROUP */
+        .drone-group { border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; margin-bottom: 15px; background: var(--bg-panel); }
+        .drone-group-title { font-size: 11px; font-weight: 700; margin-top: -24px; background: var(--bg-panel); padding: 0 5px; display: inline-block; color: var(--accent); }
+        .drone-stats { background: #111; color: #10b981; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-top: 10px; border: 1px solid #333;}
+        .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .input-row label { font-weight: 600; color: var(--text-muted); }
+        .input-row input[type="number"], .input-row input[type="text"] { width: 100px; text-align: right; }
+    </style>
+</head>
+<body>
+
+<div id="login-overlay">
+    <div class="login-box">
+        <h2>Geospatial Portal</h2>
+        <div class="login-tabs">
+            <button class="tab-btn active" id="tabUser" onclick="switchLogin('user')">User</button>
+            <button class="tab-btn" id="tabAdmin" onclick="switchLogin('admin')">Admin</button>
+        </div>
+        <input type="text" id="logUsername" class="login-input" placeholder="Username">
+        <input type="password" id="logPassword" class="login-input" placeholder="Password">
+        <p id="loginHint" style="font-size: 10px; color: var(--text-muted); margin-top:-5px; margin-bottom:15px; text-align: left;">
+            *Jika belum terdaftar, akun otomatis dibuat.
+        </p>
+        <button class="login-btn" onclick="prosesLogin()">Masuk</button>
+        <p id="logError" style="color: var(--danger); font-size: 11px; display: none; margin-top: 10px; font-weight: 600;">Login gagal!</p>
+    </div>
+</div>
+
+<div class="top-bar">
+    Geospatial Data Viewer <span id="userRoleBadge" class="user-badge"></span>
+</div>
+
+<div class="header-controls">
+    <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+        <button id="btnToggleToc" class="btn-header" style="font-size: 14px; padding: 4px 10px;">≡</button>
+        <div style="display:flex; align-items:center; gap:5px;">
+            <label style="color: var(--text-muted); font-weight: 600;">TARGET:</label>
+            <select id="targetTabel" style="padding: 4px; border-radius: 4px;">
+                <option value="jalan">Jalan</option>
+                <option value="landuse">Landuse</option>
+                <option value="tower">Tower</option>
+                <option value="wilayah">Wilayah</option>
+                <option value="shp_titik">SHP Titik</option>
+                <option value="shp_garis">SHP Garis / Rute</option>
+                <option value="shp_poligon">SHP Poligon</option>
+            </select>
+        </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="color: var(--text-muted); font-weight: 600;">BASEMAP:</label>
+            <select id="basemapSwitcher" onchange="gantiBasemap()" style="padding: 4px; border-radius: 4px; width: 180px;">
+                <option value="osm">OpenStreetMap</option>
+                <option value="esri_imagery">Imagery</option>
+                <option value="esri_topo">Topographic</option>
+                <option value="google_street">Google Maps</option>
+                <option value="dark">Carto Dark Mode</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div id="map"></div>
+<div id="koordinat-panel">Lat: -0.000000 | Lng: 0.000000</div>
+
+<div id="search-panel">
+    <input type="text" id="inputCariWilayah" placeholder="Search Location..." onkeypress="if(event.key === 'Enter') cariWilayah()">
+    <button id="btnCariWilayah" onclick="cariWilayah()">🔍</button>
+</div>
+
+<div id="floating-toolbar">
+    <button class="btn-float admin-only" onclick="document.getElementById('modalQuery').style.display='block'">
+        <span class="icon">🔍</span><span class="label">Query</span>
+    </button>
+    <button id="btnLokasi" class="btn-float">
+        <span class="icon">📍</span><span class="label">Lokasi</span>
+    </button>
+    <button id="btnLiveSync" class="btn-float">
+        <span class="icon">🔄</span><span class="label" id="lblSync">Sync</span>
+    </button>
+    <button class="btn-float admin-only" onclick="document.getElementById('modalShp').style.display='block'">
+        <span class="icon">📁</span><span class="label">Import</span>
+    </button>
+    
+    <button class="btn-float admin-only" onclick="inisiasiModeDrone()">
+        <span class="icon" style="color: var(--accent);">✈️</span><span class="label" style="color: var(--accent);">Drone</span>
+    </button>
+    
+    <button class="btn-float admin-only" onclick="bukaModalBatimetri()">
+        <span class="icon" style="color: var(--success);">🌊</span><span class="label" style="color: var(--success);">Survey</span>
+    </button>
+    
+    <button class="btn-float admin-only" onclick="bukaModalExport()">
+        <span class="icon">📤</span><span class="label">Export</span>
+    </button>
+    
+    <button id="btnRouteToggle" class="btn-float">
+        <span class="icon">🏁</span><span class="label">Rute</span>
+    </button>
+    <button id="btnDistanceToggle" class="btn-float">
+        <span class="icon">📏</span><span class="label">Jarak</span>
+    </button>
+    <button class="btn-float admin-only" onclick="bukaModalOnline()">
+        <span class="icon">👥</span><span class="label">Users</span>
+    </button>
+    <button id="btnHapusShp" class="btn-float admin-only">
+        <span class="icon" style="color: var(--danger);">🗑️</span><span class="label" style="color: var(--danger);">Hapus</span>
+    </button>
+</div>
+
+<div id="toc-sidebar">
+    <div class="toc-header">Table of Contents</div>
+    <div class="toc-card">
+        <div class="toc-card-title">Database: Jalan</div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('jalan', this)">Hide</button><button class="btn-toc-action" onclick="zoomKeLayer('jalan')">Zoom</button><button class="btn-toc-action" onclick="gantiWarnaLive('jalan')">Style</button></div>
+        <div class="simbol-container"><div class="color-box" id="simbol-jalan" style="background-color: #3b82f6;"></div><span>Simbol Data Jalan</span></div>
+    </div>
+    <div class="toc-card">
+        <div class="toc-card-title">Database: Landuse</div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('landuse', this)">Hide</button><button class="btn-toc-action" onclick="zoomKeLayer('landuse')">Zoom</button><button class="btn-toc-action" onclick="gantiWarnaLive('landuse')">Style</button></div>
+        <div class="simbol-container"><div class="color-box" id="simbol-landuse" style="background-color: #10b981;"></div><span>Simbol Data Landuse</span></div>
+    </div>
+    <div class="toc-card">
+        <div class="toc-card-title">Database: Tower</div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('tower', this)">Hide</button><button class="btn-toc-action" onclick="zoomKeLayer('tower')">Zoom</button><button class="btn-toc-action" onclick="gantiWarnaLive('tower')">Style</button></div>
+        <div class="simbol-container"><div class="color-box" id="simbol-tower" style="background-color: #f59e0b;"></div><span>Simbol Data Tower</span></div>
+    </div>
+    <div class="toc-card">
+        <div class="toc-card-title">Database: Wilayah</div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('wilayah', this)">Hide</button><button class="btn-toc-action" onclick="zoomKeLayer('wilayah')">Zoom</button><button class="btn-toc-action" onclick="gantiWarnaLive('wilayah')">Style</button></div>
+        <div class="simbol-container"><div class="color-box" id="simbol-wilayah" style="background-color: #8b5cf6;"></div><span>Simbol Data Wilayah</span></div>
+    </div>
+    <div class="toc-card">
+        <div class="toc-card-title">Layer: SHP Poligon</div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('shp_poligon', this)">Hide</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_poligon')">Zoom</button><button class="btn-toc-action" onclick="gantiWarnaLive('shp_poligon')">Style</button></div>
+        <div class="simbol-container"><div class="color-box" id="simbol-shp_poligon" style="background-color: #06b6d4;"></div><span>Simbol Poligon</span></div>
+    </div>
+    <div class="toc-card">
+        <div class="toc-card-title">Layer: SHP Garis / Rute</div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('shp_garis', this)">Hide</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_garis')">Zoom</button><button class="btn-toc-action" onclick="gantiWarnaLive('shp_garis')">Style</button></div>
+        <div class="simbol-container"><div class="color-box" id="simbol-shp_garis" style="background-color: #ef4444;"></div><span>Simbol Garis</span></div>
+    </div>
+    <div class="toc-card">
+        <div class="toc-card-title">Layer: SHP Titik</div>
+        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleLayerVis('shp_titik', this)">Hide</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_titik')">Zoom</button><button class="btn-toc-action" onclick="gantiWarnaLive('shp_titik')">Style</button></div>
+        <div class="simbol-container"><div class="color-box" id="simbol-shp_titik" style="background-color: #ec4899;"></div><span>Simbol Titik</span></div>
+    </div>
+</div>
+
+<div id="modalDronePlanner" class="modal-overlay">
+    <div class="modal-box" style="margin: 3% auto;">
+        <div class="modal-box-header">
+            <span>✈️ Parameter Misi Terbang (Live)</span>
+            <span onclick="batalMisiDrone()" style="cursor:pointer; font-size:16px;">&times;</span>
+        </div>
+        <div class="modal-box-body">
+            
+            <div class="input-row">
+                <label>Nama Rute / Misi</label>
+                <input type="text" id="droneNama" value="Misi_Mapping_01" oninput="updateLivePreview()">
+            </div>
+
+            <div class="drone-group" style="margin-top:20px;">
+                <span class="drone-group-title">Kamera & Grid</span>
+                <div class="input-row">
+                    <label>Jarak Jalur / Spacing (m)</label>
+                    <input type="number" id="droneSpacing" value="30" min="5" step="5" onchange="updateLivePreview()">
+                </div>
+                <div class="input-row">
+                    <label>Margin / Overshoot (m)</label>
+                    <input type="number" id="droneMargin" value="10" min="0" step="1" onchange="updateLivePreview()">
+                </div>
+                <label style="font-weight: 600; color: var(--text-muted); display: block; margin-top: 10px;">Sudut Hatching (<span id="lblAngle">0</span>°)</label>
+                <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="updateLivePreview()">
+            </div>
+
+            <div class="drone-group">
+                <span class="drone-group-title">Parameter Terbang</span>
+                <div class="input-row">
+                    <label>Ketinggian Terbang (m)</label>
+                    <input type="number" id="droneAlt" value="100" min="10" onchange="updateLivePreview()">
+                </div>
+                <div class="input-row">
+                    <label>Kecepatan (m/s)</label>
+                    <input type="number" id="droneSpeed" value="10" min="1" max="20" onchange="updateLivePreview()">
+                </div>
+            </div>
+
+            <div class="drone-stats" id="droneStats">
+                -- Gambar area di peta untuk melihat statistik --
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="modal-btn" style="margin-top:0; border-color: var(--danger); color: var(--danger);" onclick="batalMisiDrone()">BATAL</button>
+                <button class="modal-btn" style="margin-top:0; background: var(--accent); color: white;" onclick="simpanMisiDrone()">SIMPAN MISI</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalBatimetri" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <span>🌊 Generator Lajur Batimetri</span>
+            <span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span>
+        </div>
+        <div class="modal-box-body">
+            <div id="batiBaruSection">
+                <label>Nama Layer:</label>
+                <input type="text" id="batiNama" class="modal-input" placeholder="Survey_Batimetri_1">
+                
+                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
+                    <label style="color: var(--text-main); font-weight: 700;">LAJUR UTAMA</label>
+                    <label style="margin-top: 8px; display: block;">Interval (m):</label>
+                    <input type="number" id="batiInterval" class="modal-input" value="50" min="1">
+                    
+                    <label>Arah Sapuan:</label>
+                    <select id="batiMainOrient" class="modal-input">
+                        <option value="horizontal|top-down">Horizontal (Atas -> Bawah)</option>
+                        <option value="horizontal|bottom-up">Horizontal (Bawah -> Atas)</option>
+                        <option value="vertical|left-right">Vertikal (Kiri -> Kanan)</option>
+                        <option value="vertical|right-left">Vertikal (Kanan -> Kiri)</option>
+                    </select>
+                </div>
+
+                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
+                    <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS</label>
+                    <label style="margin-top: 8px; display: block;">Interval (m):</label>
+                    <input type="number" id="batiCrossInterval" class="modal-input" value="500" min="1">
+                    
+                    <label>Arah Sapuan:</label>
+                    <select id="batiCrossOrient" class="modal-input">
+                        <option value="vertical|left-right">Vertikal (Kiri -> Kanan)</option>
+                        <option value="vertical|right-left">Vertikal (Kanan -> Kiri)</option>
+                        <option value="horizontal|top-down">Horizontal (Atas -> Bawah)</option>
+                        <option value="horizontal|bottom-up">Horizontal (Bawah -> Atas)</option>
+                    </select>
+                </div>
+                
+                <button class="modal-btn" style="background: var(--success); color: white;" onclick="mulaiGambarBatimetri()">GAMBAR AREA BARU</button>
+            </div>
+
+            <div id="batiEditSection" style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                <p style="font-weight:700; margin-top:0;">Edit Tanpa Gambar Ulang</p>
+                <label>Interval Utama BARU (m):</label>
+                <input type="number" id="editBatiInterval" class="modal-input" min="1">
+                <label>Interval Lintas BARU (m):</label>
+                <input type="number" id="editBatiCrossInterval" class="modal-input" min="1">
+                <button class="modal-btn" style="background: var(--warning); color: white; border-color: var(--warning);" onclick="prosesEditBatimetri()">UPDATE LAJUR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalExport" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <span>Export Data Spasial</span>
+            <span onclick="document.getElementById('modalExport').style.display='none'" style="cursor:pointer">&times;</span>
+        </div>
+        <div class="modal-box-body">
+            
+            <label style="display: block; font-weight: 600; margin-bottom: 5px;">1. Pilih Kategori Tabel:</label>
+            <select id="exportTableSelect" class="modal-input" onchange="loadExportSubLayers()">
+                <option value="jalan">Jalan</option>
+                <option value="landuse">Landuse</option>
+                <option value="tower">Tower</option>
+                <option value="wilayah">Wilayah</option>
+                <option value="shp_poligon">SHP Poligon</option>
+                <option value="shp_garis" selected>SHP Garis / Rute Drone</option>
+                <option value="shp_titik">SHP Titik</option>
+                <option value="users">Daftar Users</option>
+            </select>
+            
+            <label style="display: block; font-weight: 600; margin-top: 10px; margin-bottom: 5px;">2. Pilih Spesifik File / Rute:</label>
+            <select id="exportLayerSelect" class="modal-input">
+                <option value="ALL">Semua Data di Tabel Ini</option>
+            </select>
+            
+            <p style="font-size: 10px; color: var(--text-muted); margin-top: 0;">*Catatan: Daftar Users hanya mendukung format Excel.</p>
+            
+            <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
+                <button class="modal-btn" style="flex: 1 1 100%; margin-top: 0; border-color: var(--success); color: var(--success);" onclick="eksekusiExportExcel()">Download Excel (.xlsx)</button>
+                <button class="modal-btn" style="flex:1;" onclick="eksekusiExportGeoJSON()">GeoJSON</button>
+                <button class="modal-btn" style="flex:1;" onclick="eksekusiExportKML()">KML</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div id="modalShp" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <span>Import Spasial</span>
+            <span onclick="document.getElementById('modalShp').style.display='none'" style="cursor:pointer">&times;</span>
+        </div>
+        <div class="modal-box-body">
+            <label>File (.zip, .json, .kml):</label>
+            <input type="file" id="fileShp" class="modal-input" accept=".zip,.json,.geojson,.kml">
+            <label>Geometri:</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <label><input type="radio" name="shpGeomType" value="auto" checked> Auto</label>
+                <label><input type="radio" name="shpGeomType" value="Polygon"> Poligon</label>
+                <label><input type="radio" name="shpGeomType" value="LineString"> Garis</label>
+                <label><input type="radio" name="shpGeomType" value="Point"> Titik</label>
+            </div>
+            <button class="modal-btn" style="background: var(--text-main); color: var(--bg-base);" id="btnProsesShp" onclick="prosesUploadSpasial()">SIMPAN</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalOnlineUsers" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <span>Pemantauan User Real-time</span>
+            <span onclick="tutupModalOnline()" style="cursor:pointer">&times;</span>
+        </div>
+        <div class="modal-box-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30px;">#</th>
+                        <th>Username</th>
+                        <th>Level</th>
+                    </tr>
+                </thead>
+                <tbody id="onlineUsersBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modalHapusShp" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-box-header">
+            <span>Hapus Layer</span>
+            <span onclick="document.getElementById('modalHapusShp').style.display='none'" style="cursor:pointer">&times;</span>
+        </div>
+        <div class="modal-box-body">
+            <label>Pilih Layer:</label>
+            <select id="delShpList" class="modal-input"></select>
+            <button class="modal-btn" style="background: var(--danger); color: white; border-color: var(--danger);" onclick="eksekusiHapusShp()">HAPUS PERMANEN</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalQuery" class="modal-overlay">
+    <div class="modal-sql">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 14px; text-transform: uppercase;">SQL Console (PostGIS)</h3>
+            <span id="closeModal" style="cursor: pointer; font-size: 18px; font-weight: bold;">&times;</span>
+        </div>
+        <div style="margin-bottom: 15px;">
+            <button id="btnQJalan" class="btn-query-nav">Jalan</button>
+            <button id="btnQWilayah" class="btn-query-nav">Wilayah</button>
+            <button id="btnQShpPoligon" class="btn-query-nav">Poligon</button>
+            <button id="btnQShpGaris" class="btn-query-nav">Garis</button>
+        </div>
+        <textarea id="sqlInput" style="width: 100%; height: 100px; box-sizing: border-box;"></textarea>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button id="runQuery" class="modal-btn" style="margin:0; background: var(--text-main); color: var(--bg-base);">RUN</button>
+            <button id="resetQuery" class="modal-btn" style="margin:0;">CLEAR</button>
+        </div>
+        <div style="max-height: 200px; overflow-y: auto; margin-top: 15px;">
+            <table>
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="route-panel" class="side-panel">
+    <h4 style="margin: 0 0 10px 0; font-weight: 600;">Rute Terpendek</h4>
+    <div id="route-info" style="font-size: 11px; color: var(--text-muted);">Klik 2 titik di peta...</div>
+    <button id="btnResetRoute" class="modal-btn" style="border-color: var(--danger); color: var(--danger);">RESET RUTE</button>
+</div>
+<div id="distance-panel" class="side-panel">
+    <h4 style="margin: 0 0 10px 0; font-weight: 600;">Hitung Jarak</h4>
+    <div id="distance-info" style="font-size: 11px; color: var(--text-muted);">Klik titik di peta...</div>
+    <button id="btnResetDistance" class="modal-btn" style="border-color: var(--danger); color: var(--danger);">RESET JARAK</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+<script src="https://unpkg.com/@tmcw/togeojson@4.2.0/dist/togeojson.umd.js"></script>
+<script src="https://unpkg.com/tokml@0.4.0/tokml.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+
+<script>
+    let currentUser = null;
+    let currentLoginType = 'user'; 
+    let heartbeatInterval;
+    let onlinePollingInterval;
+    
+    const defaultColors = { 
+        'jalan': '#3b82f6', 
+        'landuse': '#10b981', 
+        'tower': '#f59e0b', 
+        'wilayah': '#8b5cf6', 
+        'shp_poligon': '#06b6d4', 
+        'shp_garis': '#ef4444', 
+        'shp_titik': '#ec4899' 
+    };
+
+    // INIT MAP
+    var map = L.map('map', { 
+        preferCanvas: true, 
+        zoomControl: false 
+    }).setView([-5.3971, 105.2668], 10);
+    
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    
+    var basemaps = {
+        osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+        esri_imagery: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
+        esri_topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'),
+        google_street: L.tileLayer('http://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'] }),
+        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
+    };
+    
+    var currentBasemap = basemaps.osm;
+    currentBasemap.addTo(map);
+    
+    function gantiBasemap() { 
+        map.removeLayer(currentBasemap); 
+        currentBasemap = basemaps[document.getElementById('basemapSwitcher').value]; 
+        currentBasemap.addTo(map); 
+    }
+
+    // GEOMAN CONTROL
+    map.pm.addControls({ 
+        position: 'topright', 
+        drawMarker: true, 
+        drawPolyline: true, 
+        drawPolygon: true, 
+        editMode: true, 
+        dragMode: true, 
+        removalMode: true 
+    });
+    map.pm.setPathOptions({ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.4 });
+    map.pm.setLang('id');
+    
+    map.on('mousemove', function(e) { 
+        document.getElementById('koordinat-panel').innerHTML = `Lat: ${e.latlng.lat.toFixed(6)} | Lng: ${e.latlng.lng.toFixed(6)}`; 
+    });
+    
+    document.getElementById('btnToggleToc').onclick = function() { 
+        var t = document.getElementById('toc-sidebar'); 
+        t.style.display = (t.style.display === "none") ? "block" : "none"; 
+    };
+
+    var layersData = { 
+        jalan: L.layerGroup().addTo(map), 
+        landuse: L.layerGroup().addTo(map), 
+        tower: L.layerGroup().addTo(map), 
+        wilayah: L.layerGroup().addTo(map), 
+        shp_poligon: L.layerGroup().addTo(map), 
+        shp_garis: L.layerGroup().addTo(map), 
+        shp_titik: L.layerGroup().addTo(map) 
+    };
+
+    function toggleLayerVis(nama, btn) { 
+        var lyr = layersData[nama]; 
+        if (map.hasLayer(lyr)) { 
+            map.removeLayer(lyr); 
+            btn.innerHTML = "Show"; 
+        } else { 
+            map.addLayer(lyr); 
+            btn.innerHTML = "Hide"; 
+        } 
+    }
+
+    function ubahOpacity(nama, val) { 
+        layersData[nama].eachLayer(function(l) { 
+            if (l.setStyle) l.setStyle({ opacity: val, fillOpacity: val * 0.4 }); 
+            if (l.setOpacity) l.setOpacity(val); 
+        }); 
+    }
+
+    // PENCARIAN WILAYAH
+    function cariWilayah() {
+        const query = document.getElementById('inputCariWilayah').value;
+        if (!query) return;
+        
+        const btn = document.getElementById('btnCariWilayah');
+        btn.innerHTML = '⏳';
+        
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(data => {
+            btn.innerHTML = '🔍';
+            if (data && data.length > 0) {
+                const bbox = data[0].boundingbox;
+                if (bbox) {
+                    map.flyToBounds([ [bbox[0], bbox[2]], [bbox[1], bbox[3]] ]);
+                } else {
+                    map.flyTo([data[0].lat, data[0].lon], 13);
+                }
+            } else { 
+                alert('Wilayah tidak ditemukan!'); 
+            }
+        })
+        .catch(() => { 
+            btn.innerHTML = '🔍'; 
+            alert('Gagal mencari wilayah!'); 
+        });
+    }
+
+    // LOGIN & HEARTBEAT
+    function switchLogin(type) {
+        currentLoginType = type;
+        document.getElementById('tabUser').classList.remove('active'); 
+        document.getElementById('tabAdmin').classList.remove('active'); 
+        document.getElementById('logError').style.display = 'none';
+        
+        if (type === 'admin') { 
+            document.getElementById('tabAdmin').classList.add('active'); 
+            document.getElementById('loginHint').style.display = 'none'; 
+        } else { 
+            document.getElementById('tabUser').classList.add('active'); 
+            document.getElementById('loginHint').style.display = 'block'; 
+        }
+    }
+
+    function prosesLogin() {
+        const user = document.getElementById('logUsername').value; 
+        const pass = document.getElementById('logPassword').value;
+        const btn = document.querySelector('.login-btn'); 
+        const err = document.getElementById('logError');
+        
+        if(!user || !pass) return; 
+        btn.innerHTML = "Processing...";
+        
+        fetch('/api/login', {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ username: user, password: pass, type: currentLoginType })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'Success') {
+                currentUser = data.data; 
+                document.getElementById('login-overlay').style.display = 'none';
+                
+                const badge = document.getElementById('userRoleBadge'); 
+                badge.style.display = 'inline-block'; 
+                badge.innerHTML = `[ ${currentUser.username.toUpperCase()} | ${currentUser.role.toUpperCase()} ]`;
+                
+                aturHakAkses(); 
+                refreshSemuaData(); 
+                mulaiHeartbeat();
+            } else { 
+                err.style.display = 'block'; 
+                err.innerText = data.error; 
+                btn.innerHTML = "MASUK"; 
+            }
+        })
+        .catch(() => { 
+            err.style.display = 'block'; 
+            err.innerText = "Koneksi server gagal!"; 
+            btn.innerHTML = "MASUK"; 
+        });
+    }
+
+    function aturHakAkses() {
+        const adminElements = document.querySelectorAll('.admin-only, #btnHapusShp');
+        if (currentUser.role !== 'admin') { 
+            adminElements.forEach(el => el.style.display = 'none'); 
+            map.pm.removeControls(); 
+        } else { 
+            adminElements.forEach(el => el.style.display = 'flex'); 
+        }
+    }
+
+    function mulaiHeartbeat() {
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
+        heartbeatInterval = setInterval(() => { 
+            if (currentUser) {
+                fetch('/api/heartbeat', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ username: currentUser.username, role: currentUser.role }) 
+                }).catch(() => {}); 
+            }
+        }, 5000); 
+    }
+
+    function bukaModalOnline() { 
+        document.getElementById('modalOnlineUsers').style.display = 'block'; 
+        fetchOnlineUsers(); 
+        onlinePollingInterval = setInterval(fetchOnlineUsers, 3000); 
+    }
+    
+    function tutupModalOnline() { 
+        document.getElementById('modalOnlineUsers').style.display = 'none'; 
+        clearInterval(onlinePollingInterval); 
+    }
+    
+    function fetchOnlineUsers() {
+        fetch('/api/online-users')
+        .then(res => res.json())
+        .then(data => {
+            const tb = document.getElementById('onlineUsersBody'); 
+            tb.innerHTML = '';
+            if(data.data) { 
+                data.data.forEach(u => { 
+                    tb.innerHTML += `
+                        <tr>
+                            <td style="text-align: center;"><span class="online-dot"></span></td>
+                            <td style="font-weight: 600;">${u.username}</td>
+                            <td style="color: var(--text-muted);">${u.role === 'admin' ? 'Admin' : 'User'}</td>
+                        </tr>
+                    `; 
+                }); 
+            }
+        }).catch(() => {});
+    }
+
+    // LIVE SYNC
+    var isLiveSync = false, syncInterval;
+    
+    function refreshSemuaData() {
+        if(!currentUser) return; 
+        const getBgc = (id, key) => document.getElementById(id).style.backgroundColor || defaultColors[key];
+        
+        layersData.jalan.clearLayers(); 
+        muatDataPeta('jalan', layersData.jalan, getBgc('simbol-jalan', 'jalan'));
+        
+        layersData.landuse.clearLayers(); 
+        muatDataPeta('landuse', layersData.landuse, getBgc('simbol-landuse', 'landuse'));
+        
+        layersData.tower.clearLayers(); 
+        muatDataPeta('tower', layersData.tower, getBgc('simbol-tower', 'tower'));
+        
+        layersData.wilayah.clearLayers(); 
+        muatDataPeta('wilayah', layersData.wilayah, getBgc('simbol-wilayah', 'wilayah'));
+        
+        layersData.shp_poligon.clearLayers(); 
+        muatDataPeta('shp_poligon', layersData.shp_poligon, getBgc('simbol-shp_poligon', 'shp_poligon'));
+        
+        layersData.shp_garis.clearLayers(); 
+        muatDataPeta('shp_garis', layersData.shp_garis, getBgc('simbol-shp_garis', 'shp_garis'));
+        
+        layersData.shp_titik.clearLayers(); 
+        muatDataPeta('shp_titik', layersData.shp_titik, getBgc('simbol-shp_titik', 'shp_titik'));
+    }
+    
+    document.getElementById('btnLiveSync').onclick = function() {
+        isLiveSync = !isLiveSync; 
+        let lbl = document.getElementById('lblSync');
+        if(isLiveSync) { 
+            lbl.style.color = "var(--accent)"; 
+            refreshSemuaData(); 
+            syncInterval = setInterval(refreshSemuaData, 5000); 
+        } else { 
+            lbl.style.color = "var(--text-muted)"; 
+            clearInterval(syncInterval); 
+        }
+    };
+
+    // LOKASI SAYA
+    var isLokasiAktif = false, circleLokasi, markerLokasi;
+    
+    document.getElementById('btnLokasi').onclick = function() {
+        if (!isLokasiAktif) { 
+            this.style.background = "var(--bg-hover)"; 
+            map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true }); 
+            isLokasiAktif = true; 
+        } else { 
+            map.stopLocate(); 
+            if(circleLokasi) map.removeLayer(circleLokasi); 
+            if(markerLokasi) map.removeLayer(markerLokasi); 
+            this.style.background = "rgba(255, 255, 255, 0.9)"; 
+            isLokasiAktif = false; 
+        }
+    };
+    
+    map.on('locationfound', function(e) {
+        if(circleLokasi) map.removeLayer(circleLokasi); 
+        if(markerLokasi) map.removeLayer(markerLokasi);
+        circleLokasi = L.circle(e.latlng, e.accuracy, { color: '#2563eb', fillOpacity: 0.2 }).addTo(map); 
+        markerLokasi = L.marker(e.latlng).addTo(map).bindPopup("Lokasi").openPopup();
+    });
+
+    // -------------------------------------------------------------------------
+    // --- FITUR DRONE MISSION PLANNER (DJI STYLE - LIVE PREVIEW) ---
+    // -------------------------------------------------------------------------
+    var isDrawingDroneMode = false;
+    var currentDronePolygon = null;
+    var tempDroneLayer = L.featureGroup().addTo(map);
+
+    function inisiasiModeDrone() {
+        alert("Silakan gambar area poligon di peta untuk batas terbang Drone.");
+        isDrawingDroneMode = true;
+        map.pm.enableDraw('Polygon', {
+            snappable: true,
+            hintlineStyle: { color: '#f59e0b', dashArray: '5,5' },
+            pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 }
+        });
+    }
+
+    function updateLivePreview() {
+        tempDroneLayer.clearLayers();
+        if(!currentDronePolygon) return;
+
+        var config = {
+            nama: document.getElementById('droneNama').value || "Misi_Drone",
+            spacing: parseFloat(document.getElementById('droneSpacing').value) || 30,
+            angle: parseFloat(document.getElementById('droneAngle').value) || 0,
+            margin: parseFloat(document.getElementById('droneMargin').value) || 0,
+            altitude: parseFloat(document.getElementById('droneAlt').value) || 100,
+            speed: parseFloat(document.getElementById('droneSpeed').value) || 10
+        };
+
+        document.getElementById('lblAngle').innerText = config.angle;
+
+        var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config);
+
+        if(features.length > 0) {
+            var f = features[0]; 
+            
+            L.geoJSON(f, {
+                style: { color: '#10b981', weight: 2 }
+            }).addTo(tempDroneLayer);
+
+            var coords = f.geometry.coordinates;
+            if(coords.length > 0) {
+                L.circleMarker([coords[0][1], coords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer);
+                L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer);
+            }
+
+            document.getElementById('droneStats').innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Jarak:</span> <b style="color:#fff;">${f.properties.total_jarak_km} km</b></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Est. Waktu:</span> <b style="color:#fff;">${f.properties.estimasi_waktu_menit} Menit</b></div>
+                <div style="display:flex; justify-content:space-between;"><span>Jalur (Waypoints):</span> <b style="color:#fff;">${coords.length} Titik</b></div>
+            `;
+        } else {
+            document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit atau pengaturan margin/jarak tidak sesuai.</span>`;
+        }
+    }
+
+    function algoritmaJalurDrone(polyData, config) {
+        try {
+            var spacing = config.spacing;
+            var angle = config.angle;
+            var margin = config.margin;
+
+            var centroid = turf.centroid(polyData);
+            var rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid});
+
+            var bbox = turf.bbox(rotatedPoly);
+            var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+
+            var lines = [];
+            var refPt = turf.point([minX, minY]);
+            var distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'});
+            var numLines = Math.floor(distY / spacing) + 1;
+
+            for(let i=0; i<=numLines; i++) {
+                var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'});
+                var currentY = stepPt.geometry.coordinates[1];
+                
+                var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'});
+                var pt2 = turf.destination(turf.point([maxX, currentY]), margin + 100, 90, {units: 'meters'});
+
+                lines.push(turf.lineString([pt1.geometry.coordinates, pt2.geometry.coordinates]));
+            }
+
+            var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid}));
+
+            var continuousCoords = [];
+            var flip = false;
+
+            rotatedLines.forEach(line => {
+                var split;
+                try { split = turf.lineSplit(line, polyData); } catch(e){}
+
+                var segments = [];
+                if(split && split.features.length > 0) {
+                    split.features.forEach(seg => {
+                        var midPoint = turf.along(seg, turf.length(seg)/2);
+                        if(turf.booleanPointInPolygon(midPoint, polyData)) segments.push(seg);
+                    });
+                } else {
+                    var mid = turf.along(line, turf.length(line)/2);
+                    if(turf.booleanPointInPolygon(mid, polyData)) segments.push(line);
+                }
+
+                if(segments.length > 0) {
+                    segments.sort((a,b) => turf.length(b) - turf.length(a));
+                    var bestSeg = segments[0];
+
+                    if (margin > 0) {
+                        var c = bestSeg.geometry.coordinates;
+                        if (turf.length(bestSeg, {units: 'meters'}) > 0) {
+                            var p1 = turf.point(c[0]); 
+                            var p2 = turf.point(c[c.length-1]);
+                            var bearing = turf.bearing(p1, p2);
+                            var extP1 = turf.destination(p1, margin, bearing - 180, {units: 'meters'}).geometry.coordinates;
+                            var extP2 = turf.destination(p2, margin, bearing, {units: 'meters'}).geometry.coordinates;
+                            bestSeg = turf.lineString([extP1, ...c.slice(1, -1), extP2]);
+                        }
+                    }
+
+                    var finalCoords = bestSeg.geometry.coordinates;
+                    if(flip) finalCoords.reverse();
+                    continuousCoords.push(...finalCoords);
+                    flip = !flip;
+                }
+            });
+
+            if(continuousCoords.length > 1) {
+                var flightPath = turf.lineString(continuousCoords);
+                var distanceKm = turf.length(flightPath, {units: 'kilometers'});
+                var timeMin = (distanceKm * 1000) / config.speed / 60;
+
+                flightPath.properties = {
+                    nama_layer: config.nama,
+                    jarak_antar_jalur_m: spacing,
+                    margin_m: margin,
+                    sudut_deg: angle,
+                    altitude_m: config.altitude,
+                    speed_ms: config.speed,
+                    total_jarak_km: distanceKm.toFixed(2),
+                    estimasi_waktu_menit: timeMin.toFixed(1)
+                };
+                return [flightPath];
+            }
+            return [];
+        } catch(e) { return []; }
+    }
+
+    function simpanMisiDrone() {
+        if(!currentDronePolygon) return;
+        var config = {
+            nama: document.getElementById('droneNama').value || "Misi_Drone",
+            spacing: parseFloat(document.getElementById('droneSpacing').value) || 30,
+            angle: parseFloat(document.getElementById('droneAngle').value) || 0,
+            margin: parseFloat(document.getElementById('droneMargin').value) || 0,
+            altitude: parseFloat(document.getElementById('droneAlt').value) || 100,
+            speed: parseFloat(document.getElementById('droneSpeed').value) || 10
+        };
+
+        var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config);
+        if(features.length === 0) return alert("Gagal menyimpan rute! Pastikan area memadai.");
+
+        fetch('/api/save-shp', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                nama_layer: config.nama, 
+                pengupload: currentUser.username, 
+                features: features, 
+                geom_type: 'LineString' 
+            }) 
+        })
+        .then(res => res.json())
+        .then(d => { 
+            alert("Rute Misi Drone Berhasil Disimpan ke Tabel SHP Garis!"); 
+            batalMisiDrone();
+            refreshSemuaData(); 
+        });
+    }
+
+    function batalMisiDrone() {
+        document.getElementById('modalDronePlanner').style.display = 'none';
+        if(currentDronePolygon) map.removeLayer(currentDronePolygon);
+        tempDroneLayer.clearLayers();
+        currentDronePolygon = null;
+    }
+
+    // --- FITUR GENERATOR BATIMETRI (VERSI LAMA) ---
+    var isDrawingBatimetri = false;
+    var lastBatiPolyGeoJSON = null; 
+    var lastBatiConfig = null;
+    var batiConfig = { nama: "", interval: 50, mainOrient: "horizontal", mainDir: "top-down", crossInterval: 500, crossOrient: "vertical", crossDir: "left-right" };
+    
+    function bukaModalBatimetri() { 
+        document.getElementById('modalBatimetri').style.display = 'block'; 
+        if (lastBatiPolyGeoJSON) { 
+            document.getElementById('batiEditSection').style.display = 'block'; 
+            document.getElementById('editBatiInterval').value = lastBatiConfig.interval; 
+            document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; 
+        } 
+    }
+
+    function mulaiGambarBatimetri() {
+        batiConfig.nama = document.getElementById('batiNama').value; 
+        batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); 
+        batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value);
+        
+        var m = document.getElementById('batiMainOrient').value.split('|'); 
+        batiConfig.mainOrient = m[0]; 
+        batiConfig.mainDir = m[1];
+        
+        var c = document.getElementById('batiCrossOrient').value.split('|'); 
+        batiConfig.crossOrient = c[0]; 
+        batiConfig.crossDir = c[1];
+        
+        if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi data!");
+        
+        document.getElementById('modalBatimetri').style.display = 'none'; 
+        isDrawingBatimetri = true; 
+        map.pm.enableDraw('Polygon');
+    }
+
+    function generateBatimetriFeatures(polyData, config) {
+        function buildTrack(orient, dir, intv) {
+            var bbox = turf.bbox(polyData);
+            var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+            var continuousCoords = [];
+            var flip = false;
+            var margin = 0.05;
+
+            if (orient === 'horizontal') {
+                var startY = (dir === 'top-down') ? maxY : minY;
+                var stepDir = (dir === 'top-down') ? 180 : 0;
+                var distTotal = turf.distance(turf.point([minX, minY]), turf.point([minX, maxY]), {units: 'meters'});
+                var numLines = Math.ceil(distTotal / intv) + 2;
+                var refPt = turf.point([minX, startY]);
+                
+                for(let i=0; i<=numLines; i++) {
+                    var lat = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[1];
+                    var sweepLine = turf.lineString([[minX - margin, lat], [maxX + margin, lat]]);
+                    var split = null;
+                    try { split = turf.lineSplit(sweepLine, polyData); } catch(e){}
+                    var segments = []; 
+                    if(split && split.features.length > 0) { 
+                        split.features.forEach(s => { 
+                            if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); 
+                        }); 
+                    }
+                    if(segments.length > 0) {
+                        segments.sort((a,b) => turf.length(b) - turf.length(a)); 
+                        var coords = segments[0].geometry.coordinates;
+                        if (coords[0][0] > coords[coords.length-1][0]) coords.reverse();
+                        if(flip) coords.reverse(); 
+                        flip = !flip; 
+                        continuousCoords.push(...coords);
+                    }
+                }
+            } else {
+                var startX = (dir === 'left-right') ? minX : maxX;
+                var stepDir = (dir === 'left-right') ? 90 : -90;
+                var distTotal = turf.distance(turf.point([minX, minY]), turf.point([maxX, minY]), {units: 'meters'});
+                var numLines = Math.ceil(distTotal / intv) + 2;
+                var refPt = turf.point([startX, minY]);
+                
+                for(let i=0; i<=numLines; i++) {
+                    var lng = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[0];
+                    var sweepLine = turf.lineString([[lng, minY - margin], [lng, maxY + margin]]);
+                    var split = null;
+                    try { split = turf.lineSplit(sweepLine, polyData); } catch(e){}
+                    var segments = []; 
+                    if(split && split.features.length > 0) { 
+                        split.features.forEach(s => { 
+                            if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); 
+                        }); 
+                    }
+                    if(segments.length > 0) {
+                        segments.sort((a,b) => turf.length(b) - turf.length(a)); 
+                        var coords = segments[0].geometry.coordinates;
+                        if (coords[0][1] > coords[coords.length-1][1]) coords.reverse();
+                        if(flip) coords.reverse(); 
+                        flip = !flip; 
+                        continuousCoords.push(...coords);
+                    }
+                }
+            }
+            if(continuousCoords.length > 1) return turf.lineString(continuousCoords); 
+            return null;
+        }
+        
+        var results = [];
+        var mainLine = buildTrack(config.mainOrient, config.mainDir, config.interval); 
+        if(mainLine) { mainLine.properties = { type: "Main Lines" }; results.push(mainLine); }
+        var crossLine = buildTrack(config.crossOrient, config.crossDir, config.crossInterval); 
+        if(crossLine) { crossLine.properties = { type: "Cross Lines" }; results.push(crossLine); }
+        return results;
+    }
+
+    function tangkapGambarBatimetri(polygonLayer) {
+        var polyGeoJSON = polygonLayer.toGeoJSON();
+        var resultFeatures = generateBatimetriFeatures(polyGeoJSON, batiConfig);
+        
+        if (resultFeatures.length === 0) { 
+            alert("Area terlalu kecil/Interval besar!"); 
+            map.removeLayer(polygonLayer); 
+            return; 
+        }
+        
+        lastBatiPolyGeoJSON = polyGeoJSON; 
+        lastBatiConfig = Object.assign({}, batiConfig);
+        
+        fetch('/api/save-shp', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                nama_layer: batiConfig.nama, 
+                pengupload: currentUser.username, 
+                features: resultFeatures, 
+                geom_type: 'LineString' 
+            }) 
+        })
+        .then(res => res.json())
+        .then(d => { 
+            alert("Lajur Batimetri Dibuat!"); 
+            map.removeLayer(polygonLayer); 
+            refreshSemuaData(); 
+        });
+    }
+
+    function prosesEditBatimetri() {
+        lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); 
+        lastBatiConfig.crossInterval = parseFloat(document.getElementById('editBatiCrossInterval').value);
+        
+        var rf = generateBatimetriFeatures(lastBatiPolyGeoJSON, lastBatiConfig);
+        if(!rf || rf.length === 0) return alert("Interval tidak valid.");
+
+        fetch('/api/run-query', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) 
+        })
+        .then(() => fetch('/api/save-shp', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                nama_layer: lastBatiConfig.nama, 
+                pengupload: currentUser.username, 
+                features: rf, 
+                geom_type: 'LineString' 
+            }) 
+        }))
+        .then(() => { 
+            alert("Diperbarui!"); 
+            document.getElementById('modalBatimetri').style.display='none'; 
+            refreshSemuaData(); 
+        });
+    }
+
+    // OVERRIDE DIGITASI MANUAL (Menangani Poligon Biasa, Drone, Batimetri)
+    map.on('pm:create', async function (e) {
+        var layer = e.layer; 
+        
+        if(isDrawingDroneMode && e.shape === 'Polygon') { 
+            isDrawingDroneMode = false; 
+            currentDronePolygon = layer;
+            document.getElementById('modalDronePlanner').style.display = 'block';
+            updateLivePreview();
+            return; 
+        }
+        
+        if(isDrawingBatimetri && e.shape === 'Polygon') { 
+            isDrawingBatimetri = false; 
+            tangkapGambarBatimetri(layer); 
+            return; 
+        }
+
+        var geojson = layer.toGeoJSON(); 
+        var tabel = document.getElementById('targetTabel').value; 
+        var attr = {};
+        
+        attr.id = prompt("ID (Angka):", Math.floor(Math.random() * 90 + 10).toString()); 
+        if(!attr.id) { map.removeLayer(layer); return; }
+        
+        if(tabel==='jalan') attr.nama_jalan=prompt("Nama Jalan:"); 
+        else if(tabel==='landuse') attr.penggunaan=prompt("Lahan:"); 
+        else if(tabel==='wilayah') attr.nama_kabupaten=prompt("Kabupaten:"); 
+        else if(tabel==='tower') attr.id_provider=prompt("ID Provider:"); 
+        else if(tabel.startsWith('shp_')) attr.nama_layer=prompt("Nama Layer:");
+        
+        fetch('/api/save-feature', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ tabel: tabel, geometry: geojson.geometry, attr: attr }) 
+        })
+        .then(res => res.json())
+        .then(d => { 
+            if(d.status === 'Success') { 
+                alert("Tersimpan!"); 
+                refreshSemuaData(); 
+            } else {
+                map.removeLayer(layer); 
+            }
+        })
+        .catch(() => map.removeLayer(layer));
+    });
+
+    // ROUTE & DISTANCE
+    var isRouteActive = false, isDistanceActive = false, routingControl = null, startMarker = null, endMarker = null;
+    var distancePoints = [], distanceLine = L.polyline([], {color: '#2563eb', weight: 3}).addTo(map), distanceMarkers = L.featureGroup().addTo(map);
+    
+    function updateUIState() { 
+        document.getElementById('route-panel').style.display = isRouteActive ? "block" : "none"; 
+        document.getElementById('distance-panel').style.display = isDistanceActive ? "block" : "none"; 
+        if (!isRouteActive) { 
+            if(routingControl) map.removeControl(routingControl); 
+            if(startMarker) map.removeLayer(startMarker); 
+            if(endMarker) map.removeLayer(endMarker); 
+            startMarker=endMarker=routingControl=null; 
+        } 
+        if (!isDistanceActive) { 
+            distancePoints=[]; 
+            distanceLine.setLatLngs([]); 
+            distanceMarkers.clearLayers(); 
+        } 
+        var mCont = document.getElementById('map');
+        if(isRouteActive || isDistanceActive) { 
+            mCont.classList.add('cursor-crosshair'); 
+        } else { 
+            mCont.classList.remove('cursor-crosshair'); 
+        }
+    }
+    
+    document.getElementById('btnRouteToggle').onclick = function() { isRouteActive = !isRouteActive; if(isRouteActive) isDistanceActive = false; updateUIState(); };
+    document.getElementById('btnResetRoute').onclick = function() { isRouteActive=false; updateUIState(); isRouteActive=true; updateUIState(); };
+    document.getElementById('btnDistanceToggle').onclick = function() { isDistanceActive = !isDistanceActive; if(isDistanceActive) isRouteActive = false; updateUIState(); };
+    document.getElementById('btnResetDistance').onclick = function() { isDistanceActive=false; updateUIState(); isDistanceActive=true; updateUIState(); };
+
+    map.on('click', function(e) {
+        if (isRouteActive) {
+            if (!startMarker) {
+                startMarker = L.marker(e.latlng).addTo(map);
+            }
+            else if (!endMarker) { 
+                endMarker = L.marker(e.latlng).addTo(map); 
+                routingControl = L.Routing.control({ 
+                    waypoints: [startMarker.getLatLng(), endMarker.getLatLng()], 
+                    createMarker: () => null, 
+                    show: false 
+                }).addTo(map); 
+                routingControl.on('routesfound', ev => { 
+                    document.getElementById('route-info').innerHTML = `Jarak: ${(ev.routes[0].summary.totalDistance/1000).toFixed(2)} km`; 
+                }); 
+            }
+            else { 
+                map.removeControl(routingControl); 
+                map.removeLayer(startMarker); 
+                map.removeLayer(endMarker); 
+                startMarker = L.marker(e.latlng).addTo(map); 
+                endMarker=routingControl=null; 
+                document.getElementById('route-info').innerHTML = "Klik titik kedua...";
+            }
+        } else if (isDistanceActive) {
+            distancePoints.push(e.latlng); 
+            distanceLine.setLatLngs(distancePoints); 
+            L.circleMarker(e.latlng, {radius: 4, color: '#111', fillColor: '#2563eb', fillOpacity: 1}).addTo(distanceMarkers);
+            if (distancePoints.length > 1) { 
+                var tm = 0; 
+                for(var i=0; i<distancePoints.length-1; i++) { 
+                    tm += distancePoints[i].distanceTo(distancePoints[i+1]); 
+                }
+                document.getElementById('distance-info').innerHTML = `Jarak: ${tm.toFixed(2)} m`; 
+            }
+        }
+    });
+
+    // SQL CONSOLE
+    document.getElementById('btnQuery') ? document.getElementById('btnQuery').onclick = () => document.getElementById('modalQuery').style.display="block" : null;
+    document.getElementById('closeModal').onclick = () => document.getElementById('modalQuery').style.display="none";
+    var layerHasilQuery = L.layerGroup().addTo(map);
+    
+    document.getElementById('btnQJalan').onclick = () => document.getElementById('sqlInput').value = "SELECT id_jalan as id, nama_jalan, ST_AsGeoJSON(geom) as geometry FROM jalan"; 
+    document.getElementById('btnQWilayah').onclick = () => document.getElementById('sqlInput').value = "SELECT id_wilayah as id, nama_kabupaten, ST_AsGeoJSON(geom) as geometry FROM wilayah"; 
+    document.getElementById('btnQShpPoligon').onclick = () => document.getElementById('sqlInput').value = "SELECT id, nama_layer, ST_AsGeoJSON(geom) as geometry FROM shp_poligon"; 
+    document.getElementById('btnQShpGaris').onclick = () => document.getElementById('sqlInput').value = "SELECT id, nama_layer, ST_AsGeoJSON(geom) as geometry FROM shp_garis";
+    
+    document.getElementById('runQuery').onclick = function() {
+        var sql = document.getElementById('sqlInput').value; 
+        if(!sql) return;
+        
+        fetch('/api/run-query', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ query: sql }) 
+        })
+        .then(res => res.json())
+        .then(data => {
+            var th = document.getElementById('tableHead'); 
+            var tb = document.getElementById('tableBody'); 
+            th.innerHTML = tb.innerHTML = '';
+            if(data.data && data.data.length > 0) {
+                var cols = Object.keys(data.data[0]); 
+                th.innerHTML = '<tr><th>DEL</th>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+                data.data.forEach(row => { 
+                    var tr = '<tr>', dataId = row.id || row.gid; 
+                    tr += dataId ? `<td><button onclick="hapusData('${sql}', '${dataId}')" style="background:transparent; color:#ff5252; border:none; cursor:pointer;">✕</button></td>` : `<td>-</td>`; 
+                    cols.forEach(c => { 
+                        var v = row[c]; 
+                        if(c === 'geometry' && v) v = `<button onclick="zoomKeFitur('${encodeURIComponent(v)}')">📍</button>`; 
+                        tr += `<td>${v}</td>`; 
+                    }); 
+                    tb.innerHTML += tr + '</tr>'; 
+                });
+            } else { 
+                tb.innerHTML = '<tr><td colspan="100%">Tidak ada data.</td></tr>'; 
+            }
+        });
+    };
+
+    function zoomKeFitur(enc) { 
+        layerHasilQuery.clearLayers(); 
+        var tempLayer = L.geoJSON(JSON.parse(decodeURIComponent(enc)), {style:{color:'#2563eb', weight:3}}).addTo(layerHasilQuery); 
+        map.flyToBounds(tempLayer.getBounds(), {padding:[50,50]}); 
+        document.getElementById('modalQuery').style.display = "none"; 
+    }
+
+    function hapusData(sql, id) { 
+        var t = sql.includes("shp_poligon") ? "shp_poligon" : sql.includes("shp_garis") ? "shp_garis" : sql.includes("jalan")?"jalan":"landuse"; 
+        if(confirm("Hapus fitur ini secara permanen?")) {
+            fetch('/api/delete-feature', { 
+                method:'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify({tabel:t, id:id}) 
+            }).then(() => document.getElementById('runQuery').click()); 
+        }
+    }
+    
+    document.getElementById('resetQuery').onclick = () => { 
+        document.getElementById('sqlInput').value = ""; 
+        document.getElementById('tableBody').innerHTML = ""; 
+        layerHasilQuery.clearLayers(); 
+    };
+
+    // --- FITUR FILTER EXPORT ---
+    function bukaModalExport() {
+        document.getElementById('modalExport').style.display = 'block';
+        loadExportSubLayers();
+    }
+
+    function loadExportSubLayers() {
+        var t = document.getElementById('exportTableSelect').value;
+        var drp = document.getElementById('exportLayerSelect');
+        drp.innerHTML = '<option value="ALL">Semua Data di Tabel Ini</option>';
+        if (t === 'users') return;
+        
+        var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
+        
+        fetch('/api/run-query', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ query: `SELECT DISTINCT ${col} as name FROM ${t} WHERE ${col} IS NOT NULL` }) 
+        })
+        .then(res => res.json())
+        .then(d => { 
+            if(d.data) { 
+                d.data.forEach(r => { 
+                    if(r.name) drp.innerHTML += `<option value="${r.name}">${r.name}</option>`; 
+                }); 
+            } 
+        })
+        .catch(e => console.log(e));
+    }
+
+    function eksekusiExportExcel() {
+        var t = document.getElementById('exportTableSelect').value;
+        var sub = document.getElementById('exportLayerSelect').value;
+        if (!t) return alert("Pilih tabel terlebih dahulu!");
+        
+        var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
+        var url = `/api/export-excel/${t}`;
+        if (sub !== 'ALL') url += `?col=${col}&val=${encodeURIComponent(sub)}`;
+
+        window.location.href = url;
+        document.getElementById('modalExport').style.display = 'none';
+    }
+
+    function eksekusiExportGeoJSON() {
+        var t = document.getElementById('exportTableSelect').value;
+        var sub = document.getElementById('exportLayerSelect').value;
+        if (!t) return alert("Pilih tabel!");
+        if (t === 'users') return alert("Data Users hanya bisa diekspor ke Excel!");
+        
+        var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
+        var url = `/api/export-geojson/${t}`;
+        if (sub !== 'ALL') url += `?col=${col}&val=${encodeURIComponent(sub)}`;
+
+        window.location.href = url;
+        document.getElementById('modalExport').style.display = 'none';
+    }
+
+    function eksekusiExportKML() {
+        var t = document.getElementById('exportTableSelect').value;
+        var sub = document.getElementById('exportLayerSelect').value;
+        if (!t) return alert("Pilih tabel!");
+        if (t === 'users') return alert("Data Users hanya bisa diekspor ke Excel!");
+        
+        var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
+        var url = `/api/export-kml/${t}`;
+        if (sub !== 'ALL') url += `?col=${col}&val=${encodeURIComponent(sub)}`;
+
+        window.location.href = url;
+        document.getElementById('modalExport').style.display = 'none';
+    }
+    
+    function muatDataPeta(tabel, layerGroup, warnaLayer) { 
+        fetch('/api/run-query', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ query: `SELECT *, ST_AsGeoJSON(geom) as geometry FROM ${tabel}` }) 
+        })
+        .then(res => res.json())
+        .then(data => { 
+            if (data.data) { 
+                data.data.forEach(row => { 
+                    if (row.geometry) { 
+                        let p = `<div style="text-transform:uppercase; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--border-color); padding-bottom:5px; color:var(--text-main);">${tabel}</div><table class="popup-table">`; 
+                        for(let k in row) { 
+                            if(k !== 'geometry' && k !== 'geom') { 
+                                if(k === 'properties' && row[k]) { 
+                                    let props = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; 
+                                    for(let pk in props) p += `<tr><td>${pk}</td><td>: ${props[pk]}</td></tr>`; 
+                                } else { 
+                                    p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; 
+                                } 
+                            } 
+                        } 
+                        p += `</table>`; 
+                        
+                        L.geoJSON(JSON.parse(row.geometry), { 
+                            style: function() { 
+                                return { color: warnaLayer, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.2 }; 
+                            }, 
+                            pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: warnaLayer, color: "#fff", weight: 1, fillOpacity: 0.8 }) 
+                        }).bindPopup(p).addTo(layerGroup); 
+                    } 
+                }); 
+            } 
+        }); 
+    }
+
+    // --- HAPUS DATA SPASIAL ---
+    document.getElementById('btnHapusShp').onclick = function() { 
+        document.getElementById('modalHapusShp').style.display='block'; 
+        var drp = document.getElementById('delShpList'); 
+        drp.innerHTML = '<option value="">Memuat...</option>'; 
+        
+        fetch('/api/run-query', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ query: `SELECT 'shp_poligon' as tabel, nama_layer FROM shp_poligon GROUP BY nama_layer UNION ALL SELECT 'shp_garis', nama_layer FROM shp_garis GROUP BY nama_layer UNION ALL SELECT 'shp_titik', nama_layer FROM shp_titik GROUP BY nama_layer` }) 
+        })
+        .then(res => res.json())
+        .then(d => { 
+            drp.innerHTML = '<option value="">Pilih Layer</option>'; 
+            if(d.data) { 
+                d.data.forEach(r => { 
+                    drp.innerHTML += `<option value="${r.tabel}|${r.nama_layer}">[${r.tabel.split('_')[1].toUpperCase()}] ${r.nama_layer}</option>`; 
+                }); 
+            } 
+        }); 
+    };
+
+    function eksekusiHapusShp() { 
+        var val = document.getElementById('delShpList').value; 
+        if(!val) return; 
+        var arr = val.split('|'); 
+        if(confirm(`Hapus permanen layer "${arr[1]}"?`)) { 
+            fetch('/api/run-query', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ query: `DELETE FROM ${arr[0]} WHERE nama_layer = '${arr[1]}'` }) 
+            })
+            .then(() => { 
+                alert("Layer berhasil dihapus!"); 
+                document.getElementById('modalHapusShp').style.display='none'; 
+                refreshSemuaData(); 
+            }); 
+        } 
+    }
+
+    // --- IMPORT DATA SPASIAL DENGAN PENANGKAPAN ERROR LENGKAP ---
+    function prosesUploadSpasial() { 
+        var f = document.getElementById('fileShp').files[0]; 
+        var btn = document.getElementById('btnProsesShp'); 
+        
+        if(!f) return alert("Pilih file terlebih dahulu!"); 
+        
+        var ext = f.name.split('.').pop().toLowerCase(); 
+        var n = prompt("Beri nama layer untuk data ini:", f.name.replace('.'+ext, '')); 
+        
+        if(!n) return; 
+        btn.innerHTML = "PROCESSING..."; 
+        
+        var r = new FileReader(); 
+        
+        if (ext === 'zip') { 
+            r.onload = function(e) { 
+                shp(e.target.result)
+                .then(function(g) { 
+                    var features = Array.isArray(g) ? g[0].features : g.features;
+                    kirimDataSpasial(features, n, btn); 
+                })
+                .catch(function(err) { 
+                    console.error("Error SHPJS:", err);
+                    alert("Gagal membaca file ZIP! Pastikan di dalam ZIP terdapat file .shp, .shx, dan .dbf yang valid.\n\nDetail Error: " + err.message); 
+                    btn.innerHTML = "SIMPAN"; 
+                }); 
+            }; 
+            r.readAsArrayBuffer(f); 
+        } else if (ext === 'json' || ext === 'geojson') { 
+            r.onload = function(e) { 
+                try { 
+                    var j = JSON.parse(e.target.result); 
+                    var features = j.features || [j];
+                    kirimDataSpasial(features, n, btn); 
+                } catch(err) { 
+                    alert("Format JSON/GeoJSON Error: " + err.message); 
+                    btn.innerHTML = "SIMPAN"; 
+                } 
+            }; 
+            r.readAsText(f); 
+        } else if (ext === 'kml') { 
+            r.onload = function(e) { 
+                try { 
+                    var dom = new DOMParser().parseFromString(e.target.result, 'text/xml'); 
+                    var g = toGeoJSON.kml(dom); 
+                    kirimDataSpasial(g.features, n, btn); 
+                } catch(err) { 
+                    alert("Format KML Rusak: " + err.message); 
+                    btn.innerHTML = "SIMPAN"; 
+                } 
+            }; 
+            r.readAsText(f); 
+        } else { 
+            alert("Format file tidak didukung! Gunakan .zip, .json, .geojson, atau .kml"); 
+            btn.innerHTML = "SIMPAN"; 
+        } 
+    }
+
+    function kirimDataSpasial(ft, n, btn) { 
+        var geomType = document.querySelector('input[name="shpGeomType"]:checked').value; 
+        var uploader = document.getElementById('namaUploader').value || (currentUser ? currentUser.username : 'Admin'); 
+        
+        fetch('/api/save-shp', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ nama_layer: n, pengupload: uploader, features: ft, geom_type: geomType }) 
+        })
+        .then(res => res.json())
+        .then(d => { 
+            if (d.status === 'Success') { 
+                alert("Data Spasial Berhasil Disimpan ke Database!"); 
+                document.getElementById('modalShp').style.display='none'; 
+            } else { 
+                alert("Gagal menyimpan ke database: " + d.error); 
+            } 
+            btn.innerHTML = "SIMPAN"; 
+            refreshSemuaData(); 
+        })
+        .catch(err => { 
+            console.error("Fetch Error:", err);
+            alert("Error koneksi ke Server saat menyimpan data."); 
+            btn.innerHTML = "SIMPAN"; 
+        }); 
+    }
+
+    function zoomKeLayer(n) { 
+        var b = L.latLngBounds(); 
+        layersData[n].eachLayer(l => { 
+            if (l.getBounds) b.extend(l.getBounds()); 
+            else if (l.getLatLng) b.extend(l.getLatLng()); 
+        }); 
+        if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); 
+    }
+
+    function gantiWarnaLive(n) { 
+        var picker = document.createElement('input'); 
+        picker.type = 'color'; 
+        picker.onchange = function() { 
+            document.getElementById(`simbol-${n}`).style.backgroundColor = picker.value; 
+            layersData[n].eachLayer(l => { 
+                if (l.setStyle) l.setStyle({ color: picker.value, fillColor: picker.value }); 
+            }); 
+        }; 
+        picker.click(); 
+    }
+</script>
+</body>
+</html>
