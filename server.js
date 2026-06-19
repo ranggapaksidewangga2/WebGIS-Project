@@ -1,7 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
-const { Pool } = require('pg'); // Tambahkan ini di deretan const require
 const xlsx = require('xlsx');
 const fs = require('fs');
 const path = require('path');
