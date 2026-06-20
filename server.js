@@ -1,10 +1,17 @@
 const express = require('express');
-const { Pool } = require('pg');
+const { Pool } = require('pg'); // Hanya ditulis satu kali!
 const cors = require('cors');
 const xlsx = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 const app = express();
+
+// --- VAKSIN RAILWAY ---
+// Mencegah error 'ENOTFOUND postgres' akibat variabel bawaan Railway yang bentrok
+delete process.env.PGHOST;
+delete process.env.PGUSER;
+delete process.env.PGPASSWORD;
+delete process.env.PGDATABASE;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
@@ -13,7 +20,12 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // MENYURUH NODE.JS MENAMPILKAN INDEX.HTML DARI FOLDER PUBLIC
 app.use(express.static(path.join(__dirname, 'public')));
 
-// KONEKSI DATABASE (Lebih aman dan standar produksi)
+// CEK DATABASE URL
+if (!process.env.DATABASE_URL) {
+    console.error("⛔ FATAL ERROR: DATABASE_URL KOSONG! Pastikan sudah diisi di menu Variables Railway.");
+}
+
+// KONEKSI DATABASE
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -21,17 +33,16 @@ const pool = new Pool({
     }
 });
 
-// Tes koneksi agar Anda tahu apakah sudah berhasil atau belum di log Railway
 pool.connect((err, client, done) => {
     if (err) {
-        console.error('Gagal terhubung ke database:', err.stack);
+        console.error('⛔ Gagal terhubung ke database:', err.stack);
     } else {
-        console.log('Berhasil terhubung ke Supabase!');
+        console.log('✅ Berhasil terhubung ke Supabase!');
     }
-    done();
+    if (done) done();
 });
 
-// OTOMATIS BUAT TABEL USERS (Jika Belum Ada)
+// OTOMATIS BUAT TABEL USERS
 pool.query(`
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -39,7 +50,7 @@ pool.query(`
         password VARCHAR(255) NOT NULL,
         role VARCHAR(20) NOT NULL
     );
-`).then(() => console.log("Tabel users siap.")).catch(console.error);
+`).then(() => console.log("✅ Tabel users siap.")).catch(console.error);
 
 // Session Memori untuk User Online
 const activeUsers = new Map();
@@ -112,7 +123,8 @@ app.post('/api/save-feature', async (req, res) => {
             query = `INSERT INTO tower (id_tower, id_provider, geom) VALUES ($1, $2, ST_Force2D(ST_SetSRID(ST_GeomFromGeoJSON($3), 4326))) RETURNING id_tower as id`;
             values = [attr.id, attr.id_provider, JSON.stringify(geometry)];
         } else if (['shp_titik', 'shp_garis', 'shp_poligon'].includes(tabel)) {
-            query = `INSERT INTO ${tabel} (nama_layer, pengupload, geom) VALUES ($1, 'Admin', ST_Force2D(ST_SetSRID(ST_GeomFromGeoJSON($2), 4326))) RETURNING id`;
+            // Perbaikan: Menambahkan parameter default properties "{}" agar sesuai dengan struktur tabel
+            query = `INSERT INTO ${tabel} (nama_layer, pengupload, properties, geom) VALUES ($1, 'Admin', '{}', ST_Force2D(ST_SetSRID(ST_GeomFromGeoJSON($2), 4326))) RETURNING id`;
             values = [attr.nama_layer, JSON.stringify(geometry)];
         } else {
             return res.status(400).json({ error: "Tabel tidak didukung" });
@@ -120,6 +132,7 @@ app.post('/api/save-feature', async (req, res) => {
         const result = await pool.query(query, values);
         res.json({ status: 'Success', id: result.rows[0].id });
     } catch (err) {
+        console.error("Error save-feature:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -162,6 +175,7 @@ app.post('/api/save-shp', async (req, res) => {
         await client.query('COMMIT');
         res.json({ status: 'Success', message: `${successCount} fitur disimpan` });
     } catch (err) {
+        console.error("Error save-shp:", err);
         await client.query('ROLLBACK');
         res.status(500).json({ error: err.message });
     } finally {
@@ -312,4 +326,4 @@ app.get('/api/export-kml/:tabel', async (req, res) => {
 
 // PORT DINAMIS UNTUK CLOUD
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server WebGIS berjalan di port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server WebGIS berjalan di port ${PORT}`));
