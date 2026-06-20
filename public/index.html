@@ -32,6 +32,14 @@
             color: var(--text-main); 
         }
 
+        /* --- PERBAIKAN: PAKSA KURSOR MENJADI JARUM/PANAH BIASA --- */
+        .leaflet-container { cursor: default !important; }
+        .leaflet-interactive { cursor: default !important; }
+        .leaflet-grab { cursor: default !important; }
+        .leaflet-dragging .leaflet-grab,
+        .leaflet-dragging .leaflet-grab .leaflet-interactive,
+        .leaflet-dragging .leaflet-marker-draggable { cursor: default !important; }
+
         /* GAYA UMUM ELEMENT */
         select, input, .modal-input, textarea { 
             background: var(--bg-base); 
@@ -194,9 +202,10 @@
                 <option value="esri_imagery">Imagery</option>
                 <option value="esri_topo">Topographic</option>
                 <option value="google_street">Google Maps</option>
-                <option value="dark">Carto Dark Mode</option>
+                <option value="google_hybrid">Google Hybrid</option>
                 <option value="google_satellite">Google Satellite</option>
                 <option value="topo_3d">Terrain 3D (Topografi)</option>
+                <option value="dark">Carto Dark Mode</option>
             </select>
         </div>
     </div>
@@ -420,12 +429,15 @@
                 <option value="users">Daftar Users</option>
             </select>
             
-            <label style="display: block; font-weight: 600; margin-top: 10px; margin-bottom: 5px;">2. Pilih Spesifik File / Rute:</label>
-            <select id="exportLayerSelect" class="modal-input">
-                <option value="ALL">Semua Data di Tabel Ini</option>
+            <label style="display: block; font-weight: 600; margin-top: 10px; margin-bottom: 5px;">
+                2. Pilih Spesifik File / Rute <br>
+                <span style="font-size: 10px; color: var(--accent); font-weight:normal;">*Tahan tombol <b>CTRL</b> untuk memilih banyak data sekaligus</span>
+            </label>
+            <select id="exportLayerSelect" class="modal-input" multiple style="height: 120px; font-size:11px;">
+                <option value="ALL" selected>Semua Data di Tabel Ini</option>
             </select>
             
-            <p style="font-size: 10px; color: var(--text-muted); margin-top: 0;">*Catatan: Daftar Users hanya mendukung format Excel.</p>
+            <p style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">*Catatan: Jika memilih banyak data, file akan tergabung menjadi 1 file download.</p>
             
             <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
                 <button class="modal-btn" style="flex: 1 1 100%; margin-top: 0; border-color: var(--success); color: var(--success);" onclick="eksekusiExportExcel()">Download Excel (.xlsx)</button>
@@ -555,25 +567,20 @@
         'shp_titik': '#ec4899' 
     };
 
-    // INIT MAP
-    var map = L.map('map', { 
-        preferCanvas: true, 
-        zoomControl: false 
-    }).setView([-5.3971, 105.2668], 10);
-    
+    var map = L.map('map', { preferCanvas: true, zoomControl: false }).setView([-5.3971, 105.2668], 10);
     L.control.zoom({ position: 'topright' }).addTo(map);
     
-    // TAMBAHAN: BASEMAP BARU DIMASUKKAN KE VARIABEL INI
+    // --- PERBAIKAN: TAMBAHAN GOOGLE HYBRID ---
     var basemaps = {
         osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
         esri_imagery: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
         esri_topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'),
         google_street: L.tileLayer('http://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'] }),
-        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'),
         
-        // --- DUA BASEMAP BARU (SATELIT HYBRID & TOPO 3D) ---
+        google_hybrid: L.tileLayer('http://{s}.google.com/vt?lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'] }),
         google_satellite: L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'] }),
-        topo_3d: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)' })
+        topo_3d: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)' }),
+        dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
     };
     
     var currentBasemap = basemaps.osm;
@@ -585,18 +592,14 @@
         currentBasemap.addTo(map); 
     }
 
-    // GEOMAN CONTROL
+    // --- PERBAIKAN: GEOMAN CONTROL (MAGNET DIMATIKAN) ---
     map.pm.addControls({ 
-        position: 'topright', 
-        drawMarker: true, 
-        drawPolyline: true, 
-        drawPolygon: true, 
-        editMode: true, 
-        dragMode: true, 
-        removalMode: true 
+        position: 'topright', drawMarker: true, drawPolyline: true, drawPolygon: true, editMode: true, dragMode: true, removalMode: true 
     });
     map.pm.setPathOptions({ color: '#2563eb', fillColor: '#2563eb', fillOpacity: 0.4 });
     map.pm.setLang('id');
+    // Matikan Snapping (Magnet) secara global saat menggambar
+    map.pm.setGlobalOptions({ snappable: false });
     
     map.on('mousemove', function(e) { 
         document.getElementById('koordinat-panel').innerHTML = `Lat: ${e.latlng.lat.toFixed(6)} | Lng: ${e.latlng.lng.toFixed(6)}`; 
@@ -620,11 +623,9 @@
     function toggleLayerVis(nama, btn) { 
         var lyr = layersData[nama]; 
         if (map.hasLayer(lyr)) { 
-            map.removeLayer(lyr); 
-            btn.innerHTML = "Show"; 
+            map.removeLayer(lyr); btn.innerHTML = "Show"; 
         } else { 
-            map.addLayer(lyr); 
-            btn.innerHTML = "Hide"; 
+            map.addLayer(lyr); btn.innerHTML = "Hide"; 
         } 
     }
 
@@ -639,29 +640,19 @@
     function cariWilayah() {
         const query = document.getElementById('inputCariWilayah').value;
         if (!query) return;
-        
         const btn = document.getElementById('btnCariWilayah');
         btn.innerHTML = '⏳';
-        
         fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
         .then(res => res.json())
         .then(data => {
             btn.innerHTML = '🔍';
             if (data && data.length > 0) {
                 const bbox = data[0].boundingbox;
-                if (bbox) {
-                    map.flyToBounds([ [bbox[0], bbox[2]], [bbox[1], bbox[3]] ]);
-                } else {
-                    map.flyTo([data[0].lat, data[0].lon], 13);
-                }
-            } else { 
-                alert('Wilayah tidak ditemukan!'); 
-            }
+                if (bbox) map.flyToBounds([ [bbox[0], bbox[2]], [bbox[1], bbox[3]] ]);
+                else map.flyTo([data[0].lat, data[0].lon], 13);
+            } else { alert('Wilayah tidak ditemukan!'); }
         })
-        .catch(() => { 
-            btn.innerHTML = '🔍'; 
-            alert('Gagal mencari wilayah!'); 
-        });
+        .catch(() => { btn.innerHTML = '🔍'; alert('Gagal mencari wilayah!'); });
     }
 
     // LOGIN & HEARTBEAT
@@ -686,12 +677,9 @@
         const btn = document.querySelector('.login-btn'); 
         const err = document.getElementById('logError');
         
-        if(!user || !pass) return; 
-        btn.innerHTML = "Processing...";
-        
+        if(!user || !pass) return; btn.innerHTML = "Processing...";
         fetch('/api/login', {
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify({ username: user, password: pass, type: currentLoginType })
         })
         .then(res => res.json())
@@ -699,168 +687,105 @@
             if(data.status === 'Success') {
                 currentUser = data.data; 
                 document.getElementById('login-overlay').style.display = 'none';
-                
                 const badge = document.getElementById('userRoleBadge'); 
                 badge.style.display = 'inline-block'; 
                 badge.innerHTML = `[ ${currentUser.username.toUpperCase()} | ${currentUser.role.toUpperCase()} ]`;
-                
-                aturHakAkses(); 
-                refreshSemuaData(); 
-                mulaiHeartbeat();
+                aturHakAkses(); refreshSemuaData(); mulaiHeartbeat();
             } else { 
-                err.style.display = 'block'; 
-                err.innerText = data.error; 
-                btn.innerHTML = "MASUK"; 
+                err.style.display = 'block'; err.innerText = data.error; btn.innerHTML = "MASUK"; 
             }
         })
-        .catch(() => { 
-            err.style.display = 'block'; 
-            err.innerText = "Koneksi server gagal!"; 
-            btn.innerHTML = "MASUK"; 
-        });
+        .catch(() => { err.style.display = 'block'; err.innerText = "Koneksi server gagal!"; btn.innerHTML = "MASUK"; });
     }
 
     function aturHakAkses() {
         const adminElements = document.querySelectorAll('.admin-only');
-        
-        if (currentUser.role !== 'admin') { 
-            adminElements.forEach(el => el.style.display = 'none'); 
-        } else { 
-            adminElements.forEach(el => el.style.display = 'flex'); 
-        }
+        if (currentUser.role !== 'admin') adminElements.forEach(el => el.style.display = 'none'); 
+        else adminElements.forEach(el => el.style.display = 'flex'); 
     }
 
     function mulaiHeartbeat() {
         if (heartbeatInterval) clearInterval(heartbeatInterval);
         heartbeatInterval = setInterval(() => { 
             if (currentUser) {
-                fetch('/api/heartbeat', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ username: currentUser.username, role: currentUser.role }) 
-                }).catch(() => {}); 
+                fetch('/api/heartbeat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser.username, role: currentUser.role }) }).catch(() => {}); 
             }
         }, 5000); 
     }
 
     function bukaModalOnline() { 
         document.getElementById('modalOnlineUsers').style.display = 'block'; 
-        fetchOnlineUsers(); 
-        onlinePollingInterval = setInterval(fetchOnlineUsers, 3000); 
+        fetchOnlineUsers(); onlinePollingInterval = setInterval(fetchOnlineUsers, 3000); 
     }
-    
     function tutupModalOnline() { 
         document.getElementById('modalOnlineUsers').style.display = 'none'; 
         clearInterval(onlinePollingInterval); 
     }
     
     function fetchOnlineUsers() {
-        fetch('/api/online-users')
-        .then(res => res.json())
-        .then(data => {
-            const tb = document.getElementById('onlineUsersBody'); 
-            tb.innerHTML = '';
+        fetch('/api/online-users').then(res => res.json()).then(data => {
+            const tb = document.getElementById('onlineUsersBody'); tb.innerHTML = '';
             if(data.data) { 
                 data.data.forEach(u => { 
-                    tb.innerHTML += `
-                        <tr>
-                            <td style="text-align: center;"><span class="online-dot"></span></td>
-                            <td style="font-weight: 600;">${u.username}</td>
-                            <td style="color: var(--text-muted);">${u.role === 'admin' ? 'Admin' : 'User'}</td>
-                        </tr>
-                    `; 
+                    tb.innerHTML += `<tr><td style="text-align: center;"><span class="online-dot"></span></td><td style="font-weight: 600;">${u.username}</td><td style="color: var(--text-muted);">${u.role === 'admin' ? 'Admin' : 'User'}</td></tr>`; 
                 }); 
             }
         }).catch(() => {});
     }
 
-    // LIVE SYNC
     var isLiveSync = false, syncInterval;
-    
     function refreshSemuaData() {
         if(!currentUser) return; 
         const getBgc = (id, key) => document.getElementById(id).style.backgroundColor || defaultColors[key];
         
-        layersData.jalan.clearLayers(); 
-        muatDataPeta('jalan', layersData.jalan, getBgc('simbol-jalan', 'jalan'));
-        
-        layersData.landuse.clearLayers(); 
-        muatDataPeta('landuse', layersData.landuse, getBgc('simbol-landuse', 'landuse'));
-        
-        layersData.tower.clearLayers(); 
-        muatDataPeta('tower', layersData.tower, getBgc('simbol-tower', 'tower'));
-        
-        layersData.wilayah.clearLayers(); 
-        muatDataPeta('wilayah', layersData.wilayah, getBgc('simbol-wilayah', 'wilayah'));
-        
-        layersData.shp_poligon.clearLayers(); 
-        muatDataPeta('shp_poligon', layersData.shp_poligon, getBgc('simbol-shp_poligon', 'shp_poligon'));
-        
-        layersData.shp_garis.clearLayers(); 
-        muatDataPeta('shp_garis', layersData.shp_garis, getBgc('simbol-shp_garis', 'shp_garis'));
-        
-        layersData.shp_titik.clearLayers(); 
-        muatDataPeta('shp_titik', layersData.shp_titik, getBgc('simbol-shp_titik', 'shp_titik'));
+        layersData.jalan.clearLayers(); muatDataPeta('jalan', layersData.jalan, getBgc('simbol-jalan', 'jalan'));
+        layersData.landuse.clearLayers(); muatDataPeta('landuse', layersData.landuse, getBgc('simbol-landuse', 'landuse'));
+        layersData.tower.clearLayers(); muatDataPeta('tower', layersData.tower, getBgc('simbol-tower', 'tower'));
+        layersData.wilayah.clearLayers(); muatDataPeta('wilayah', layersData.wilayah, getBgc('simbol-wilayah', 'wilayah'));
+        layersData.shp_poligon.clearLayers(); muatDataPeta('shp_poligon', layersData.shp_poligon, getBgc('simbol-shp_poligon', 'shp_poligon'));
+        layersData.shp_garis.clearLayers(); muatDataPeta('shp_garis', layersData.shp_garis, getBgc('simbol-shp_garis', 'shp_garis'));
+        layersData.shp_titik.clearLayers(); muatDataPeta('shp_titik', layersData.shp_titik, getBgc('simbol-shp_titik', 'shp_titik'));
     }
     
     document.getElementById('btnLiveSync').onclick = function() {
-        isLiveSync = !isLiveSync; 
-        let lbl = document.getElementById('lblSync');
+        isLiveSync = !isLiveSync; let lbl = document.getElementById('lblSync');
         if(isLiveSync) { 
-            lbl.style.color = "var(--accent)"; 
-            refreshSemuaData(); 
-            syncInterval = setInterval(refreshSemuaData, 5000); 
+            lbl.style.color = "var(--accent)"; refreshSemuaData(); syncInterval = setInterval(refreshSemuaData, 5000); 
         } else { 
-            lbl.style.color = "var(--text-muted)"; 
-            clearInterval(syncInterval); 
+            lbl.style.color = "var(--text-muted)"; clearInterval(syncInterval); 
         }
     };
 
-    // LOKASI SAYA
     var isLokasiAktif = false, circleLokasi, markerLokasi;
-    
     document.getElementById('btnLokasi').onclick = function() {
         if (!isLokasiAktif) { 
-            this.style.background = "var(--bg-hover)"; 
-            map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true }); 
-            isLokasiAktif = true; 
+            this.style.background = "var(--bg-hover)"; map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true }); isLokasiAktif = true; 
         } else { 
-            map.stopLocate(); 
-            if(circleLokasi) map.removeLayer(circleLokasi); 
-            if(markerLokasi) map.removeLayer(markerLokasi); 
-            this.style.background = "rgba(255, 255, 255, 0.9)"; 
-            isLokasiAktif = false; 
+            map.stopLocate(); if(circleLokasi) map.removeLayer(circleLokasi); if(markerLokasi) map.removeLayer(markerLokasi); 
+            this.style.background = "rgba(255, 255, 255, 0.9)"; isLokasiAktif = false; 
         }
     };
-    
     map.on('locationfound', function(e) {
-        if(circleLokasi) map.removeLayer(circleLokasi); 
-        if(markerLokasi) map.removeLayer(markerLokasi);
+        if(circleLokasi) map.removeLayer(circleLokasi); if(markerLokasi) map.removeLayer(markerLokasi);
         circleLokasi = L.circle(e.latlng, e.accuracy, { color: '#2563eb', fillOpacity: 0.2 }).addTo(map); 
         markerLokasi = L.marker(e.latlng).addTo(map).bindPopup("Lokasi").openPopup();
     });
 
-    // -------------------------------------------------------------------------
-    // --- FITUR DRONE MISSION PLANNER (DJI STYLE - LIVE PREVIEW) ---
-    // -------------------------------------------------------------------------
-    var isDrawingDroneMode = false;
-    var currentDronePolygon = null;
-    var tempDroneLayer = L.featureGroup().addTo(map);
+    // --- FITUR DRONE ---
+    var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
 
     function inisiasiModeDrone() {
         alert("Silakan gambar area poligon di peta untuk batas terbang Drone.");
         isDrawingDroneMode = true;
         map.pm.enableDraw('Polygon', {
-            snappable: true,
+            snappable: false, // Pastikan tidak nempel saat bikin drone
             hintlineStyle: { color: '#f59e0b', dashArray: '5,5' },
             pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 }
         });
     }
 
     function updateLivePreview() {
-        tempDroneLayer.clearLayers();
-        if(!currentDronePolygon) return;
-
+        tempDroneLayer.clearLayers(); if(!currentDronePolygon) return;
         var config = {
             nama: document.getElementById('droneNama').value || "Misi_Drone",
             spacing: parseFloat(document.getElementById('droneSpacing').value) || 30,
@@ -869,119 +794,66 @@
             altitude: parseFloat(document.getElementById('droneAlt').value) || 100,
             speed: parseFloat(document.getElementById('droneSpeed').value) || 10
         };
-
         document.getElementById('lblAngle').innerText = config.angle;
-
         var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config);
-
         if(features.length > 0) {
             var f = features[0]; 
-            
-            L.geoJSON(f, {
-                style: { color: '#10b981', weight: 2 }
-            }).addTo(tempDroneLayer);
-
+            L.geoJSON(f, { style: { color: '#10b981', weight: 2 } }).addTo(tempDroneLayer);
             var coords = f.geometry.coordinates;
             if(coords.length > 0) {
                 L.circleMarker([coords[0][1], coords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer);
                 L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer);
             }
-
-            document.getElementById('droneStats').innerHTML = `
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Jarak:</span> <b style="color:#fff;">${f.properties.total_jarak_km} km</b></div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Est. Waktu:</span> <b style="color:#fff;">${f.properties.estimasi_waktu_menit} Menit</b></div>
-                <div style="display:flex; justify-content:space-between;"><span>Jalur (Waypoints):</span> <b style="color:#fff;">${coords.length} Titik</b></div>
-            `;
+            document.getElementById('droneStats').innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Jarak:</span> <b style="color:#fff;">${f.properties.total_jarak_km} km</b></div><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Est. Waktu:</span> <b style="color:#fff;">${f.properties.estimasi_waktu_menit} Menit</b></div><div style="display:flex; justify-content:space-between;"><span>Jalur (Waypoints):</span> <b style="color:#fff;">${coords.length} Titik</b></div>`;
         } else {
-            document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit atau pengaturan margin/jarak tidak sesuai.</span>`;
+            document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`;
         }
     }
 
     function algoritmaJalurDrone(polyData, config) {
         try {
-            var spacing = config.spacing;
-            var angle = config.angle;
-            var margin = config.margin;
-
-            var centroid = turf.centroid(polyData);
-            var rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid});
-
-            var bbox = turf.bbox(rotatedPoly);
-            var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
-
-            var lines = [];
-            var refPt = turf.point([minX, minY]);
-            var distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'});
+            var spacing = config.spacing, angle = config.angle, margin = config.margin;
+            var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid});
+            var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+            var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'});
             var numLines = Math.floor(distY / spacing) + 1;
 
             for(let i=0; i<=numLines; i++) {
-                var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'});
-                var currentY = stepPt.geometry.coordinates[1];
-                
+                var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1];
                 var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'});
                 var pt2 = turf.destination(turf.point([maxX, currentY]), margin + 100, 90, {units: 'meters'});
-
                 lines.push(turf.lineString([pt1.geometry.coordinates, pt2.geometry.coordinates]));
             }
 
-            var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid}));
-
-            var continuousCoords = [];
-            var flip = false;
-
+            var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid})), continuousCoords = [], flip = false;
             rotatedLines.forEach(line => {
-                var split;
-                try { split = turf.lineSplit(line, polyData); } catch(e){}
-
+                var split; try { split = turf.lineSplit(line, polyData); } catch(e){}
                 var segments = [];
                 if(split && split.features.length > 0) {
-                    split.features.forEach(seg => {
-                        var midPoint = turf.along(seg, turf.length(seg)/2);
-                        if(turf.booleanPointInPolygon(midPoint, polyData)) segments.push(seg);
-                    });
+                    split.features.forEach(seg => { if(turf.booleanPointInPolygon(turf.along(seg, turf.length(seg)/2), polyData)) segments.push(seg); });
                 } else {
-                    var mid = turf.along(line, turf.length(line)/2);
-                    if(turf.booleanPointInPolygon(mid, polyData)) segments.push(line);
+                    if(turf.booleanPointInPolygon(turf.along(line, turf.length(line)/2), polyData)) segments.push(line);
                 }
 
                 if(segments.length > 0) {
-                    segments.sort((a,b) => turf.length(b) - turf.length(a));
-                    var bestSeg = segments[0];
-
+                    segments.sort((a,b) => turf.length(b) - turf.length(a)); var bestSeg = segments[0];
                     if (margin > 0) {
                         var c = bestSeg.geometry.coordinates;
                         if (turf.length(bestSeg, {units: 'meters'}) > 0) {
-                            var p1 = turf.point(c[0]); 
-                            var p2 = turf.point(c[c.length-1]);
-                            var bearing = turf.bearing(p1, p2);
+                            var p1 = turf.point(c[0]), p2 = turf.point(c[c.length-1]), bearing = turf.bearing(p1, p2);
                             var extP1 = turf.destination(p1, margin, bearing - 180, {units: 'meters'}).geometry.coordinates;
                             var extP2 = turf.destination(p2, margin, bearing, {units: 'meters'}).geometry.coordinates;
                             bestSeg = turf.lineString([extP1, ...c.slice(1, -1), extP2]);
                         }
                     }
-
-                    var finalCoords = bestSeg.geometry.coordinates;
-                    if(flip) finalCoords.reverse();
-                    continuousCoords.push(...finalCoords);
-                    flip = !flip;
+                    var finalCoords = bestSeg.geometry.coordinates; if(flip) finalCoords.reverse();
+                    continuousCoords.push(...finalCoords); flip = !flip;
                 }
             });
 
             if(continuousCoords.length > 1) {
-                var flightPath = turf.lineString(continuousCoords);
-                var distanceKm = turf.length(flightPath, {units: 'kilometers'});
-                var timeMin = (distanceKm * 1000) / config.speed / 60;
-
-                flightPath.properties = {
-                    nama_layer: config.nama,
-                    jarak_antar_jalur_m: spacing,
-                    margin_m: margin,
-                    sudut_deg: angle,
-                    altitude_m: config.altitude,
-                    speed_ms: config.speed,
-                    total_jarak_km: distanceKm.toFixed(2),
-                    estimasi_waktu_menit: timeMin.toFixed(1)
-                };
+                var flightPath = turf.lineString(continuousCoords), distanceKm = turf.length(flightPath, {units: 'kilometers'}), timeMin = (distanceKm * 1000) / config.speed / 60;
+                flightPath.properties = { nama_layer: config.nama, jarak_antar_jalur_m: spacing, margin_m: margin, sudut_deg: angle, altitude_m: config.altitude, speed_ms: config.speed, total_jarak_km: distanceKm.toFixed(2), estimasi_waktu_menit: timeMin.toFixed(1) };
                 return [flightPath];
             }
             return [];
@@ -990,147 +862,68 @@
 
     function simpanMisiDrone() {
         if(!currentDronePolygon) return;
-        var config = {
-            nama: document.getElementById('droneNama').value || "Misi_Drone",
-            spacing: parseFloat(document.getElementById('droneSpacing').value) || 30,
-            angle: parseFloat(document.getElementById('droneAngle').value) || 0,
-            margin: parseFloat(document.getElementById('droneMargin').value) || 0,
-            altitude: parseFloat(document.getElementById('droneAlt').value) || 100,
-            speed: parseFloat(document.getElementById('droneSpeed').value) || 10
-        };
-
+        var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 };
         var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config);
         if(features.length === 0) return alert("Gagal menyimpan rute! Pastikan area memadai.");
 
-        fetch('/api/save-shp', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                nama_layer: config.nama, 
-                pengupload: currentUser.username, 
-                features: features, 
-                geom_type: 'LineString' 
-            }) 
-        })
-        .then(res => res.json())
-        .then(d => { 
-            alert("Rute Misi Drone Berhasil Disimpan ke Tabel SHP Garis!"); 
-            batalMisiDrone();
-            refreshSemuaData(); 
-        });
+        fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: config.nama, pengupload: currentUser.username, features: features, geom_type: 'LineString' }) })
+        .then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan ke Tabel SHP Garis!"); batalMisiDrone(); refreshSemuaData(); });
     }
 
     function batalMisiDrone() {
         document.getElementById('modalDronePlanner').style.display = 'none';
         if(currentDronePolygon) map.removeLayer(currentDronePolygon);
-        tempDroneLayer.clearLayers();
-        currentDronePolygon = null;
+        tempDroneLayer.clearLayers(); currentDronePolygon = null;
     }
 
-    // --- FITUR GENERATOR BATIMETRI (VERSI LAMA) ---
-    var isDrawingBatimetri = false;
-    var lastBatiPolyGeoJSON = null; 
-    var lastBatiConfig = null;
-    var batiConfig = { nama: "", interval: 50, mainOrient: "horizontal", mainDir: "top-down", crossInterval: 500, crossOrient: "vertical", crossDir: "left-right" };
+    // --- FITUR BATIMETRI ---
+    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, mainOrient: "horizontal", mainDir: "top-down", crossInterval: 500, crossOrient: "vertical", crossDir: "left-right" };
     
     function bukaModalBatimetri() { 
         document.getElementById('modalBatimetri').style.display = 'block'; 
         if (lastBatiPolyGeoJSON) { 
-            document.getElementById('batiEditSection').style.display = 'block'; 
-            document.getElementById('editBatiInterval').value = lastBatiConfig.interval; 
-            document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; 
+            document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; 
         } 
     }
 
     function mulaiGambarBatimetri() {
-        batiConfig.nama = document.getElementById('batiNama').value; 
-        batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); 
-        batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value);
-        
-        var m = document.getElementById('batiMainOrient').value.split('|'); 
-        batiConfig.mainOrient = m[0]; 
-        batiConfig.mainDir = m[1];
-        
-        var c = document.getElementById('batiCrossOrient').value.split('|'); 
-        batiConfig.crossOrient = c[0]; 
-        batiConfig.crossDir = c[1];
-        
+        batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value);
+        var m = document.getElementById('batiMainOrient').value.split('|'); batiConfig.mainOrient = m[0]; batiConfig.mainDir = m[1];
+        var c = document.getElementById('batiCrossOrient').value.split('|'); batiConfig.crossOrient = c[0]; batiConfig.crossDir = c[1];
         if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi data!");
-        
-        document.getElementById('modalBatimetri').style.display = 'none'; 
-        isDrawingBatimetri = true; 
+        document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; 
         map.pm.enableDraw('Polygon');
     }
 
     function generateBatimetriFeatures(polyData, config) {
         function buildTrack(orient, dir, intv) {
-            var bbox = turf.bbox(polyData);
-            var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
-            var continuousCoords = [];
-            var flip = false;
-            var margin = 0.05;
-
+            var bbox = turf.bbox(polyData), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3], continuousCoords = [], flip = false, margin = 0.05;
             if (orient === 'horizontal') {
-                var startY = (dir === 'top-down') ? maxY : minY;
-                var stepDir = (dir === 'top-down') ? 180 : 0;
-                var distTotal = turf.distance(turf.point([minX, minY]), turf.point([minX, maxY]), {units: 'meters'});
-                var numLines = Math.ceil(distTotal / intv) + 2;
-                var refPt = turf.point([minX, startY]);
-                
+                var startY = (dir === 'top-down') ? maxY : minY, stepDir = (dir === 'top-down') ? 180 : 0, distTotal = turf.distance(turf.point([minX, minY]), turf.point([minX, maxY]), {units: 'meters'});
+                var numLines = Math.ceil(distTotal / intv) + 2, refPt = turf.point([minX, startY]);
                 for(let i=0; i<=numLines; i++) {
                     var lat = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[1];
-                    var sweepLine = turf.lineString([[minX - margin, lat], [maxX + margin, lat]]);
-                    var split = null;
+                    var sweepLine = turf.lineString([[minX - margin, lat], [maxX + margin, lat]]), split = null;
                     try { split = turf.lineSplit(sweepLine, polyData); } catch(e){}
                     var segments = []; 
-                    if(split && split.features.length > 0) { 
-                        split.features.forEach(s => { 
-                            if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); 
-                        }); 
-                    }
-                    if(segments.length > 0) {
-                        segments.sort((a,b) => turf.length(b) - turf.length(a)); 
-                        var coords = segments[0].geometry.coordinates;
-                        if (coords[0][0] > coords[coords.length-1][0]) coords.reverse();
-                        if(flip) coords.reverse(); 
-                        flip = !flip; 
-                        continuousCoords.push(...coords);
-                    }
+                    if(split && split.features.length > 0) split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); });
+                    if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var coords = segments[0].geometry.coordinates; if (coords[0][0] > coords[coords.length-1][0]) coords.reverse(); if(flip) coords.reverse(); flip = !flip; continuousCoords.push(...coords); }
                 }
             } else {
-                var startX = (dir === 'left-right') ? minX : maxX;
-                var stepDir = (dir === 'left-right') ? 90 : -90;
-                var distTotal = turf.distance(turf.point([minX, minY]), turf.point([maxX, minY]), {units: 'meters'});
-                var numLines = Math.ceil(distTotal / intv) + 2;
-                var refPt = turf.point([startX, minY]);
-                
+                var startX = (dir === 'left-right') ? minX : maxX, stepDir = (dir === 'left-right') ? 90 : -90, distTotal = turf.distance(turf.point([minX, minY]), turf.point([maxX, minY]), {units: 'meters'});
+                var numLines = Math.ceil(distTotal / intv) + 2, refPt = turf.point([startX, minY]);
                 for(let i=0; i<=numLines; i++) {
                     var lng = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[0];
-                    var sweepLine = turf.lineString([[lng, minY - margin], [lng, maxY + margin]]);
-                    var split = null;
+                    var sweepLine = turf.lineString([[lng, minY - margin], [lng, maxY + margin]]), split = null;
                     try { split = turf.lineSplit(sweepLine, polyData); } catch(e){}
                     var segments = []; 
-                    if(split && split.features.length > 0) { 
-                        split.features.forEach(s => { 
-                            if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); 
-                        }); 
-                    }
-                    if(segments.length > 0) {
-                        segments.sort((a,b) => turf.length(b) - turf.length(a)); 
-                        var coords = segments[0].geometry.coordinates;
-                        if (coords[0][1] > coords[coords.length-1][1]) coords.reverse();
-                        if(flip) coords.reverse(); 
-                        flip = !flip; 
-                        continuousCoords.push(...coords);
-                    }
+                    if(split && split.features.length > 0) split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); });
+                    if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var coords = segments[0].geometry.coordinates; if (coords[0][1] > coords[coords.length-1][1]) coords.reverse(); if(flip) coords.reverse(); flip = !flip; continuousCoords.push(...coords); }
                 }
             }
-            if(continuousCoords.length > 1) return turf.lineString(continuousCoords); 
-            return null;
+            if(continuousCoords.length > 1) return turf.lineString(continuousCoords); return null;
         }
-        
-        var results = [];
-        var mainLine = buildTrack(config.mainOrient, config.mainDir, config.interval); 
+        var results = [], mainLine = buildTrack(config.mainOrient, config.mainDir, config.interval); 
         if(mainLine) { mainLine.properties = { type: "Main Lines" }; results.push(mainLine); }
         var crossLine = buildTrack(config.crossOrient, config.crossDir, config.crossInterval); 
         if(crossLine) { crossLine.properties = { type: "Cross Lines" }; results.push(crossLine); }
@@ -1138,89 +931,32 @@
     }
 
     function tangkapGambarBatimetri(polygonLayer) {
-        var polyGeoJSON = polygonLayer.toGeoJSON();
-        var resultFeatures = generateBatimetriFeatures(polyGeoJSON, batiConfig);
-        
-        if (resultFeatures.length === 0) { 
-            alert("Area terlalu kecil/Interval besar!"); 
-            map.removeLayer(polygonLayer); 
-            return; 
-        }
-        
-        lastBatiPolyGeoJSON = polyGeoJSON; 
-        lastBatiConfig = Object.assign({}, batiConfig);
-        
-        fetch('/api/save-shp', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                nama_layer: batiConfig.nama, 
-                pengupload: currentUser.username, 
-                features: resultFeatures, 
-                geom_type: 'LineString' 
-            }) 
-        })
-        .then(res => res.json())
-        .then(d => { 
-            alert("Lajur Batimetri Dibuat!"); 
-            map.removeLayer(polygonLayer); 
-            refreshSemuaData(); 
-        });
+        var polyGeoJSON = polygonLayer.toGeoJSON(), resultFeatures = generateBatimetriFeatures(polyGeoJSON, batiConfig);
+        if (resultFeatures.length === 0) { alert("Area terlalu kecil/Interval besar!"); map.removeLayer(polygonLayer); return; }
+        lastBatiPolyGeoJSON = polyGeoJSON; lastBatiConfig = Object.assign({}, batiConfig);
+        fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: batiConfig.nama, pengupload: currentUser.username, features: resultFeatures, geom_type: 'LineString' }) })
+        .then(res => res.json()).then(d => { alert("Lajur Batimetri Dibuat!"); map.removeLayer(polygonLayer); refreshSemuaData(); });
     }
 
     function prosesEditBatimetri() {
-        lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); 
-        lastBatiConfig.crossInterval = parseFloat(document.getElementById('editBatiCrossInterval').value);
-        
+        lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); lastBatiConfig.crossInterval = parseFloat(document.getElementById('editBatiCrossInterval').value);
         var rf = generateBatimetriFeatures(lastBatiPolyGeoJSON, lastBatiConfig);
         if(!rf || rf.length === 0) return alert("Interval tidak valid.");
-
-        fetch('/api/run-query', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) 
-        })
-        .then(() => fetch('/api/save-shp', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ 
-                nama_layer: lastBatiConfig.nama, 
-                pengupload: currentUser.username, 
-                features: rf, 
-                geom_type: 'LineString' 
-            }) 
-        }))
-        .then(() => { 
-            alert("Diperbarui!"); 
-            document.getElementById('modalBatimetri').style.display='none'; 
-            refreshSemuaData(); 
-        });
+        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) })
+        .then(() => fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: lastBatiConfig.nama, pengupload: currentUser.username, features: rf, geom_type: 'LineString' }) }))
+        .then(() => { alert("Diperbarui!"); document.getElementById('modalBatimetri').style.display='none'; refreshSemuaData(); });
     }
 
     // OVERRIDE DIGITASI MANUAL
     map.on('pm:create', async function (e) {
         var layer = e.layer; 
-        
         if(isDrawingDroneMode && e.shape === 'Polygon') { 
-            isDrawingDroneMode = false; 
-            currentDronePolygon = layer;
-            document.getElementById('modalDronePlanner').style.display = 'block';
-            updateLivePreview();
-            return; 
+            isDrawingDroneMode = false; currentDronePolygon = layer; document.getElementById('modalDronePlanner').style.display = 'block'; updateLivePreview(); return; 
         }
-        
-        if(isDrawingBatimetri && e.shape === 'Polygon') { 
-            isDrawingBatimetri = false; 
-            tangkapGambarBatimetri(layer); 
-            return; 
-        }
+        if(isDrawingBatimetri && e.shape === 'Polygon') { isDrawingBatimetri = false; tangkapGambarBatimetri(layer); return; }
 
-        var geojson = layer.toGeoJSON(); 
-        var tabel = document.getElementById('targetTabel').value; 
-        var attr = {};
-        
-        attr.id = prompt("ID (Angka):", Math.floor(Math.random() * 90 + 10).toString()); 
-        if(!attr.id) { map.removeLayer(layer); return; }
+        var geojson = layer.toGeoJSON(); var tabel = document.getElementById('targetTabel').value; var attr = {};
+        attr.id = prompt("ID (Angka):", Math.floor(Math.random() * 90 + 10).toString()); if(!attr.id) { map.removeLayer(layer); return; }
         
         if(tabel==='jalan') attr.nama_jalan=prompt("Nama Jalan:"); 
         else if(tabel==='landuse') attr.penggunaan=prompt("Lahan:"); 
@@ -1228,21 +964,8 @@
         else if(tabel==='tower') attr.id_provider=prompt("ID Provider:"); 
         else if(tabel.startsWith('shp_')) attr.nama_layer=prompt("Nama Layer:");
         
-        fetch('/api/save-feature', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ tabel: tabel, geometry: geojson.geometry, attr: attr, uploader: currentUser.username }) 
-        })
-        .then(res => res.json())
-        .then(d => { 
-            if(d.status === 'Success') { 
-                alert("Tersimpan!"); 
-                refreshSemuaData(); 
-            } else {
-                map.removeLayer(layer); 
-            }
-        })
-        .catch(() => map.removeLayer(layer));
+        fetch('/api/save-feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tabel: tabel, geometry: geojson.geometry, attr: attr, uploader: currentUser.username }) })
+        .then(res => res.json()).then(d => { if(d.status === 'Success') { alert("Tersimpan!"); refreshSemuaData(); } else { map.removeLayer(layer); } }).catch(() => map.removeLayer(layer));
     });
 
     // ROUTE & DISTANCE
@@ -1252,23 +975,10 @@
     function updateUIState() { 
         document.getElementById('route-panel').style.display = isRouteActive ? "block" : "none"; 
         document.getElementById('distance-panel').style.display = isDistanceActive ? "block" : "none"; 
-        if (!isRouteActive) { 
-            if(routingControl) map.removeControl(routingControl); 
-            if(startMarker) map.removeLayer(startMarker); 
-            if(endMarker) map.removeLayer(endMarker); 
-            startMarker=endMarker=routingControl=null; 
-        } 
-        if (!isDistanceActive) { 
-            distancePoints=[]; 
-            distanceLine.setLatLngs([]); 
-            distanceMarkers.clearLayers(); 
-        } 
+        if (!isRouteActive) { if(routingControl) map.removeControl(routingControl); if(startMarker) map.removeLayer(startMarker); if(endMarker) map.removeLayer(endMarker); startMarker=endMarker=routingControl=null; } 
+        if (!isDistanceActive) { distancePoints=[]; distanceLine.setLatLngs([]); distanceMarkers.clearLayers(); } 
         var mCont = document.getElementById('map');
-        if(isRouteActive || isDistanceActive) { 
-            mCont.classList.add('cursor-crosshair'); 
-        } else { 
-            mCont.classList.remove('cursor-crosshair'); 
-        }
+        if(isRouteActive || isDistanceActive) { mCont.classList.add('cursor-crosshair'); } else { mCont.classList.remove('cursor-crosshair'); }
     }
     
     document.getElementById('btnRouteToggle').onclick = function() { isRouteActive = !isRouteActive; if(isRouteActive) isDistanceActive = false; updateUIState(); };
@@ -1278,39 +988,16 @@
 
     map.on('click', function(e) {
         if (isRouteActive) {
-            if (!startMarker) {
-                startMarker = L.marker(e.latlng).addTo(map);
-            }
+            if (!startMarker) startMarker = L.marker(e.latlng).addTo(map);
             else if (!endMarker) { 
                 endMarker = L.marker(e.latlng).addTo(map); 
-                routingControl = L.Routing.control({ 
-                    waypoints: [startMarker.getLatLng(), endMarker.getLatLng()], 
-                    createMarker: () => null, 
-                    show: false 
-                }).addTo(map); 
-                routingControl.on('routesfound', ev => { 
-                    document.getElementById('route-info').innerHTML = `Jarak: ${(ev.routes[0].summary.totalDistance/1000).toFixed(2)} km`; 
-                }); 
+                routingControl = L.Routing.control({ waypoints: [startMarker.getLatLng(), endMarker.getLatLng()], createMarker: () => null, show: false }).addTo(map); 
+                routingControl.on('routesfound', ev => { document.getElementById('route-info').innerHTML = `Jarak: ${(ev.routes[0].summary.totalDistance/1000).toFixed(2)} km`; }); 
             }
-            else { 
-                map.removeControl(routingControl); 
-                map.removeLayer(startMarker); 
-                map.removeLayer(endMarker); 
-                startMarker = L.marker(e.latlng).addTo(map); 
-                endMarker=routingControl=null; 
-                document.getElementById('route-info').innerHTML = "Klik titik kedua...";
-            }
+            else { map.removeControl(routingControl); map.removeLayer(startMarker); map.removeLayer(endMarker); startMarker = L.marker(e.latlng).addTo(map); endMarker=routingControl=null; document.getElementById('route-info').innerHTML = "Klik titik kedua..."; }
         } else if (isDistanceActive) {
-            distancePoints.push(e.latlng); 
-            distanceLine.setLatLngs(distancePoints); 
-            L.circleMarker(e.latlng, {radius: 4, color: '#111', fillColor: '#2563eb', fillOpacity: 1}).addTo(distanceMarkers);
-            if (distancePoints.length > 1) { 
-                var tm = 0; 
-                for(var i=0; i<distancePoints.length-1; i++) { 
-                    tm += distancePoints[i].distanceTo(distancePoints[i+1]); 
-                }
-                document.getElementById('distance-info').innerHTML = `Jarak: ${tm.toFixed(2)} m`; 
-            }
+            distancePoints.push(e.latlng); distanceLine.setLatLngs(distancePoints); L.circleMarker(e.latlng, {radius: 4, color: '#111', fillColor: '#2563eb', fillOpacity: 1}).addTo(distanceMarkers);
+            if (distancePoints.length > 1) { var tm = 0; for(var i=0; i<distancePoints.length-1; i++) { tm += distancePoints[i].distanceTo(distancePoints[i+1]); } document.getElementById('distance-info').innerHTML = `Jarak: ${tm.toFixed(2)} m`; }
         }
     });
 
@@ -1325,163 +1012,94 @@
     document.getElementById('btnQShpGaris').onclick = () => document.getElementById('sqlInput').value = "SELECT id, nama_layer, ST_AsGeoJSON(geom) as geometry FROM shp_garis";
     
     document.getElementById('runQuery').onclick = function() {
-        var sql = document.getElementById('sqlInput').value; 
-        if(!sql) return;
-        
-        fetch('/api/run-query', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ query: sql }) 
-        })
-        .then(res => res.json())
-        .then(data => {
-            var th = document.getElementById('tableHead'); 
-            var tb = document.getElementById('tableBody'); 
-            th.innerHTML = tb.innerHTML = '';
+        var sql = document.getElementById('sqlInput').value; if(!sql) return;
+        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: sql }) })
+        .then(res => res.json()).then(data => {
+            var th = document.getElementById('tableHead'); var tb = document.getElementById('tableBody'); th.innerHTML = tb.innerHTML = '';
             if(data.data && data.data.length > 0) {
-                var cols = Object.keys(data.data[0]); 
-                th.innerHTML = '<tr><th>DEL</th>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
+                var cols = Object.keys(data.data[0]); th.innerHTML = '<tr><th>DEL</th>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr>';
                 data.data.forEach(row => { 
                     var tr = '<tr>', dataId = row.id || row.gid; 
                     tr += dataId ? `<td><button onclick="hapusData('${sql}', '${dataId}')" style="background:transparent; color:#ff5252; border:none; cursor:pointer;">✕</button></td>` : `<td>-</td>`; 
-                    cols.forEach(c => { 
-                        var v = row[c]; 
-                        if(c === 'geometry' && v) v = `<button onclick="zoomKeFitur('${encodeURIComponent(v)}')">📍</button>`; 
-                        tr += `<td>${v}</td>`; 
-                    }); 
+                    cols.forEach(c => { var v = row[c]; if(c === 'geometry' && v) v = `<button onclick="zoomKeFitur('${encodeURIComponent(v)}')">📍</button>`; tr += `<td>${v}</td>`; }); 
                     tb.innerHTML += tr + '</tr>'; 
                 });
-            } else { 
-                tb.innerHTML = '<tr><td colspan="100%">Tidak ada data.</td></tr>'; 
-            }
+            } else { tb.innerHTML = '<tr><td colspan="100%">Tidak ada data.</td></tr>'; }
         });
     };
 
-    function zoomKeFitur(enc) { 
-        layerHasilQuery.clearLayers(); 
-        var tempLayer = L.geoJSON(JSON.parse(decodeURIComponent(enc)), {style:{color:'#2563eb', weight:3}}).addTo(layerHasilQuery); 
-        map.flyToBounds(tempLayer.getBounds(), {padding:[50,50]}); 
-        document.getElementById('modalQuery').style.display = "none"; 
-    }
+    function zoomKeFitur(enc) { layerHasilQuery.clearLayers(); var tempLayer = L.geoJSON(JSON.parse(decodeURIComponent(enc)), {style:{color:'#2563eb', weight:3}}).addTo(layerHasilQuery); map.flyToBounds(tempLayer.getBounds(), {padding:[50,50]}); document.getElementById('modalQuery').style.display = "none"; }
+    function hapusData(sql, id) { var t = sql.includes("shp_poligon") ? "shp_poligon" : sql.includes("shp_garis") ? "shp_garis" : sql.includes("jalan")?"jalan":"landuse"; if(confirm("Hapus fitur ini secara permanen?")) { fetch('/api/delete-feature', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tabel:t, id:id}) }).then(() => document.getElementById('runQuery').click()); } }
+    document.getElementById('resetQuery').onclick = () => { document.getElementById('sqlInput').value = ""; document.getElementById('tableBody').innerHTML = ""; layerHasilQuery.clearLayers(); };
 
-    function hapusData(sql, id) { 
-        var t = sql.includes("shp_poligon") ? "shp_poligon" : sql.includes("shp_garis") ? "shp_garis" : sql.includes("jalan")?"jalan":"landuse"; 
-        if(confirm("Hapus fitur ini secara permanen?")) {
-            fetch('/api/delete-feature', { 
-                method:'POST', 
-                headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({tabel:t, id:id}) 
-            }).then(() => document.getElementById('runQuery').click()); 
-        }
-    }
-    
-    document.getElementById('resetQuery').onclick = () => { 
-        document.getElementById('sqlInput').value = ""; 
-        document.getElementById('tableBody').innerHTML = ""; 
-        layerHasilQuery.clearLayers(); 
-    };
-
-    // --- FITUR FILTER EXPORT ---
-    function bukaModalExport() {
-        document.getElementById('modalExport').style.display = 'block';
-        loadExportSubLayers();
-    }
+    // --- PERBAIKAN: FITUR FILTER EXPORT MULTIPLE DATA ---
+    function bukaModalExport() { document.getElementById('modalExport').style.display = 'block'; loadExportSubLayers(); }
 
     function loadExportSubLayers() {
         var t = document.getElementById('exportTableSelect').value;
         var drp = document.getElementById('exportLayerSelect');
-        drp.innerHTML = '<option value="ALL">Semua Data di Tabel Ini</option>';
+        drp.innerHTML = '<option value="ALL" selected>Semua Data di Tabel Ini</option>';
         if (t === 'users') return;
         
         var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
         
-        fetch('/api/run-query', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ query: `SELECT DISTINCT ${col} as name FROM ${t} WHERE ${col} IS NOT NULL` }) 
-        })
-        .then(res => res.json())
-        .then(d => { 
-            if(d.data) { 
-                d.data.forEach(r => { 
-                    if(r.name) drp.innerHTML += `<option value="${r.name}">${r.name}</option>`; 
-                }); 
-            } 
-        })
-        .catch(e => console.log(e));
+        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `SELECT DISTINCT ${col} as name FROM ${t} WHERE ${col} IS NOT NULL` }) })
+        .then(res => res.json()).then(d => { if(d.data) { d.data.forEach(r => { if(r.name) drp.innerHTML += `<option value="${r.name}">${r.name}</option>`; }); } }).catch(e => console.log(e));
+    }
+
+    function getSelectedExportLayers() {
+        var select = document.getElementById('exportLayerSelect');
+        var result = [];
+        for (var i = 0; i < select.options.length; i++) {
+            if (select.options[i].selected) result.push(select.options[i].value);
+        }
+        if(result.length === 0 || result.includes('ALL')) return 'ALL';
+        return result.join(','); // Menggabungkan file yang dipilih dengan koma
     }
 
     function eksekusiExportExcel() {
         var t = document.getElementById('exportTableSelect').value;
-        var sub = document.getElementById('exportLayerSelect').value;
+        var sub = getSelectedExportLayers();
         if (!t) return alert("Pilih tabel terlebih dahulu!");
-        
         var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
         var url = `/api/export-excel/${t}`;
         if (sub !== 'ALL') url += `?col=${col}&val=${encodeURIComponent(sub)}`;
-
         window.location.href = url;
         document.getElementById('modalExport').style.display = 'none';
     }
 
     function eksekusiExportGeoJSON() {
         var t = document.getElementById('exportTableSelect').value;
-        var sub = document.getElementById('exportLayerSelect').value;
-        if (!t) return alert("Pilih tabel!");
-        if (t === 'users') return alert("Data Users hanya bisa diekspor ke Excel!");
-        
+        var sub = getSelectedExportLayers();
+        if (!t) return alert("Pilih tabel!"); if (t === 'users') return alert("Data Users hanya bisa diekspor ke Excel!");
         var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
         var url = `/api/export-geojson/${t}`;
         if (sub !== 'ALL') url += `?col=${col}&val=${encodeURIComponent(sub)}`;
-
         window.location.href = url;
         document.getElementById('modalExport').style.display = 'none';
     }
 
     function eksekusiExportKML() {
         var t = document.getElementById('exportTableSelect').value;
-        var sub = document.getElementById('exportLayerSelect').value;
-        if (!t) return alert("Pilih tabel!");
-        if (t === 'users') return alert("Data Users hanya bisa diekspor ke Excel!");
-        
+        var sub = getSelectedExportLayers();
+        if (!t) return alert("Pilih tabel!"); if (t === 'users') return alert("Data Users hanya bisa diekspor ke Excel!");
         var col = t.startsWith('shp_') ? 'nama_layer' : (t==='jalan'?'nama_jalan':(t==='landuse'?'penggunaan':(t==='wilayah'?'nama_kabupaten':'id_provider')));
         var url = `/api/export-kml/${t}`;
         if (sub !== 'ALL') url += `?col=${col}&val=${encodeURIComponent(sub)}`;
-
         window.location.href = url;
         document.getElementById('modalExport').style.display = 'none';
     }
     
     function muatDataPeta(tabel, layerGroup, warnaLayer) { 
-        fetch('/api/run-query', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ query: `SELECT *, ST_AsGeoJSON(geom) as geometry FROM ${tabel}` }) 
-        })
-        .then(res => res.json())
-        .then(data => { 
+        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `SELECT *, ST_AsGeoJSON(geom) as geometry FROM ${tabel}` }) })
+        .then(res => res.json()).then(data => { 
             if (data.data) { 
                 data.data.forEach(row => { 
                     if (row.geometry) { 
                         let p = `<div style="text-transform:uppercase; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--border-color); padding-bottom:5px; color:var(--text-main);">${tabel}</div><table class="popup-table">`; 
-                        for(let k in row) { 
-                            if(k !== 'geometry' && k !== 'geom') { 
-                                if(k === 'properties' && row[k]) { 
-                                    let props = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; 
-                                    for(let pk in props) p += `<tr><td>${pk}</td><td>: ${props[pk]}</td></tr>`; 
-                                } else { 
-                                    p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; 
-                                } 
-                            } 
-                        } 
+                        for(let k in row) { if(k !== 'geometry' && k !== 'geom') { if(k === 'properties' && row[k]) { let props = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; for(let pk in props) p += `<tr><td>${pk}</td><td>: ${props[pk]}</td></tr>`; } else { p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; } } } 
                         p += `</table>`; 
-                        
-                        L.geoJSON(JSON.parse(row.geometry), { 
-                            style: function() { 
-                                return { color: warnaLayer, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.2 }; 
-                            }, 
-                            pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: warnaLayer, color: "#fff", weight: 1, fillOpacity: 0.8 }) 
-                        }).bindPopup(p).addTo(layerGroup); 
+                        L.geoJSON(JSON.parse(row.geometry), { style: function() { return { color: warnaLayer, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.2 }; }, pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: warnaLayer, color: "#fff", weight: 1, fillOpacity: 0.8 }) }).bindPopup(p).addTo(layerGroup); 
                     } 
                 }); 
             } 
@@ -1490,175 +1108,31 @@
 
     // --- HAPUS DATA SPASIAL ---
     document.getElementById('btnHapusShp').onclick = function() { 
-        document.getElementById('modalHapusShp').style.display='block'; 
-        var drp = document.getElementById('delShpList'); 
-        drp.innerHTML = '<option value="">Memuat...</option>'; 
-        
-        fetch('/api/run-query', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ query: `SELECT 'shp_poligon' as tabel, nama_layer FROM shp_poligon GROUP BY nama_layer UNION ALL SELECT 'shp_garis', nama_layer FROM shp_garis GROUP BY nama_layer UNION ALL SELECT 'shp_titik', nama_layer FROM shp_titik GROUP BY nama_layer` }) 
-        })
-        .then(res => res.json())
-        .then(d => { 
-            drp.innerHTML = '<option value="">Pilih Layer</option>'; 
-            if(d.data) { 
-                d.data.forEach(r => { 
-                    drp.innerHTML += `<option value="${r.tabel}|${r.nama_layer}">[${r.tabel.split('_')[1].toUpperCase()}] ${r.nama_layer}</option>`; 
-                }); 
-            } 
-        }); 
+        document.getElementById('modalHapusShp').style.display='block'; var drp = document.getElementById('delShpList'); drp.innerHTML = '<option value="">Memuat...</option>'; 
+        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `SELECT 'shp_poligon' as tabel, nama_layer FROM shp_poligon GROUP BY nama_layer UNION ALL SELECT 'shp_garis', nama_layer FROM shp_garis GROUP BY nama_layer UNION ALL SELECT 'shp_titik', nama_layer FROM shp_titik GROUP BY nama_layer` }) })
+        .then(res => res.json()).then(d => { drp.innerHTML = '<option value="">Pilih Layer</option>'; if(d.data) { d.data.forEach(r => { drp.innerHTML += `<option value="${r.tabel}|${r.nama_layer}">[${r.tabel.split('_')[1].toUpperCase()}] ${r.nama_layer}</option>`; }); } }); 
     };
-
-    function eksekusiHapusShp() { 
-        var val = document.getElementById('delShpList').value; 
-        if(!val) return; 
-        var arr = val.split('|'); 
-        if(confirm(`Hapus permanen layer "${arr[1]}"?`)) { 
-            fetch('/api/run-query', { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ query: `DELETE FROM ${arr[0]} WHERE nama_layer = '${arr[1]}'` }) 
-            })
-            .then(() => { 
-                alert("Layer berhasil dihapus!"); 
-                document.getElementById('modalHapusShp').style.display='none'; 
-                refreshSemuaData(); 
-            }); 
-        } 
-    }
+    function eksekusiHapusShp() { var val = document.getElementById('delShpList').value; if(!val) return; var arr = val.split('|'); if(confirm(`Hapus permanen layer "${arr[1]}"?`)) { fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `DELETE FROM ${arr[0]} WHERE nama_layer = '${arr[1]}'` }) }).then(() => { alert("Layer berhasil dihapus!"); document.getElementById('modalHapusShp').style.display='none'; refreshSemuaData(); }); } }
 
     // --- IMPORT DATA SPASIAL ---
     function prosesUploadSpasial() { 
-        var f = document.getElementById('fileShp').files[0]; 
-        var btn = document.getElementById('btnProsesShp'); 
-        
+        var f = document.getElementById('fileShp').files[0]; var btn = document.getElementById('btnProsesShp'); 
         if(!f) return alert("Pilih file terlebih dahulu!"); 
-        
-        var ext = f.name.split('.').pop().toLowerCase(); 
-        var n = prompt("Beri nama layer untuk data ini:", f.name.replace('.'+ext, '')); 
-        
-        if(!n) return; 
-        btn.innerHTML = "PROCESSING..."; 
-        
+        var ext = f.name.split('.').pop().toLowerCase(); var n = prompt("Beri nama layer untuk data ini:", f.name.replace('.'+ext, '')); 
+        if(!n) return; btn.innerHTML = "PROCESSING..."; 
         var r = new FileReader(); 
-        
-        if (ext === 'zip') { 
-            r.onload = function(e) { 
-                shp(e.target.result)
-                .then(function(g) { 
-                    var features = Array.isArray(g) ? g[0].features : g.features;
-                    kirimDataSpasial(features, n, btn); 
-                })
-                .catch(function(err) { 
-                    console.error("Error SHPJS:", err);
-                    alert("Gagal membaca file ZIP! Pastikan di dalam ZIP terdapat file .shp, .shx, dan .dbf yang valid.\n\nDetail Error: " + err.message); 
-                    btn.innerHTML = "SIMPAN"; 
-                }); 
-            }; 
-            r.readAsArrayBuffer(f); 
-        } else if (ext === 'json' || ext === 'geojson') { 
-            r.onload = function(e) { 
-                try { 
-                    var j = JSON.parse(e.target.result); 
-                    var features = j.features || [j];
-                    kirimDataSpasial(features, n, btn); 
-                } catch(err) { 
-                    alert("Format JSON/GeoJSON Error: " + err.message); 
-                    btn.innerHTML = "SIMPAN"; 
-                } 
-            }; 
-            r.readAsText(f); 
-        } else if (ext === 'kml') { 
-            r.onload = function(e) { 
-                try { 
-                    var dom = new DOMParser().parseFromString(e.target.result, 'text/xml'); 
-                    var g = toGeoJSON.kml(dom); 
-                    kirimDataSpasial(g.features, n, btn); 
-                } catch(err) { 
-                    alert("Format KML Rusak: " + err.message); 
-                    btn.innerHTML = "SIMPAN"; 
-                } 
-            }; 
-            r.readAsText(f); 
-        } else { 
-            alert("Format file tidak didukung! Gunakan .zip, .json, .geojson, atau .kml"); 
-            btn.innerHTML = "SIMPAN"; 
-        } 
+        if (ext === 'zip') { r.onload = function(e) { shp(e.target.result).then(function(g) { var features = Array.isArray(g) ? g[0].features : g.features; kirimDataSpasial(features, n, btn); }).catch(function(err) { console.error("Error SHPJS:", err); alert("Gagal membaca file ZIP!\nDetail Error: " + err.message); btn.innerHTML = "SIMPAN"; }); }; r.readAsArrayBuffer(f); } else if (ext === 'json' || ext === 'geojson') { r.onload = function(e) { try { var j = JSON.parse(e.target.result); var features = j.features || [j]; kirimDataSpasial(features, n, btn); } catch(err) { alert("Format JSON Error: " + err.message); btn.innerHTML = "SIMPAN"; } }; r.readAsText(f); } else if (ext === 'kml') { r.onload = function(e) { try { var dom = new DOMParser().parseFromString(e.target.result, 'text/xml'); var g = toGeoJSON.kml(dom); kirimDataSpasial(g.features, n, btn); } catch(err) { alert("Format KML Rusak: " + err.message); btn.innerHTML = "SIMPAN"; } }; r.readAsText(f); } else { alert("Format file tidak didukung!"); btn.innerHTML = "SIMPAN"; } 
     }
-
-    function kirimDataSpasial(ft, n, btn) { 
-        var geomType = document.querySelector('input[name="shpGeomType"]:checked').value; 
-        var uploader = currentUser ? currentUser.username : 'Admin'; 
-        
-        fetch('/api/save-shp', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ nama_layer: n, pengupload: uploader, features: ft, geom_type: geomType }) 
-        })
-        .then(res => res.json())
-        .then(d => { 
-            if (d.status === 'Success') { 
-                alert("Data Spasial Berhasil Disimpan ke Database!"); 
-                document.getElementById('modalShp').style.display='none'; 
-            } else { 
-                alert("Gagal menyimpan ke database: " + d.error); 
-            } 
-            btn.innerHTML = "SIMPAN"; 
-            refreshSemuaData(); 
-        })
-        .catch(err => { 
-            console.error("Fetch Error:", err);
-            alert("Error koneksi ke Server saat menyimpan data."); 
-            btn.innerHTML = "SIMPAN"; 
-        }); 
-    }
-
-    function zoomKeLayer(n) { 
-        var b = L.latLngBounds(); 
-        layersData[n].eachLayer(l => { 
-            if (l.getBounds) b.extend(l.getBounds()); 
-            else if (l.getLatLng) b.extend(l.getLatLng()); 
-        }); 
-        if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); 
-    }
-
-    function gantiWarnaLive(n) { 
-        var picker = document.createElement('input'); 
-        picker.type = 'color'; 
-        picker.onchange = function() { 
-            document.getElementById(`simbol-${n}`).style.backgroundColor = picker.value; 
-            layersData[n].eachLayer(l => { 
-                if (l.setStyle) l.setStyle({ color: picker.value, fillColor: picker.value }); 
-            }); 
-        }; 
-        picker.click(); 
-    }
+    function kirimDataSpasial(ft, n, btn) { var geomType = document.querySelector('input[name="shpGeomType"]:checked').value; var uploader = currentUser ? currentUser.username : 'Admin'; fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: n, pengupload: uploader, features: ft, geom_type: geomType }) }).then(res => res.json()).then(d => { if (d.status === 'Success') { alert("Data Tersimpan!"); document.getElementById('modalShp').style.display='none'; } else { alert("Gagal: " + d.error); } btn.innerHTML = "SIMPAN"; refreshSemuaData(); }).catch(err => { alert("Error koneksi Server."); btn.innerHTML = "SIMPAN"; }); }
+    function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
+    function gantiWarnaLive(n) { var picker = document.createElement('input'); picker.type = 'color'; picker.onchange = function() { document.getElementById(`simbol-${n}`).style.backgroundColor = picker.value; layersData[n].eachLayer(l => { if (l.setStyle) l.setStyle({ color: picker.value, fillColor: picker.value }); }); }; picker.click(); }
 
     // --- FITUR GEDUNG 3D (OSM BUILDINGS) ---
-    var osmbLayer = null;
-    var is3DActive = false;
-
+    var osmbLayer = null; var is3DActive = false;
     function toggleGedung3D() {
-        var btn = document.getElementById('btn3D');
-        is3DActive = !is3DActive;
-        
-        if (is3DActive) {
-            btn.style.color = "var(--accent)";
-            btn.style.borderColor = "var(--accent)";
-            
-            if (!osmbLayer) {
-                osmbLayer = new OSMBuildings(map).load('https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json');
-            }
-        } else {
-            btn.style.color = "var(--text-main)";
-            btn.style.borderColor = "var(--border-color)";
-            
-            if (osmbLayer) {
-                osmbLayer.destroy();
-                osmbLayer = null;
-            }
-        }
+        var btn = document.getElementById('btn3D'); is3DActive = !is3DActive;
+        if (is3DActive) { btn.style.color = "var(--accent)"; btn.style.borderColor = "var(--accent)"; if (!osmbLayer) osmbLayer = new OSMBuildings(map).load('https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json'); } 
+        else { btn.style.color = "var(--text-main)"; btn.style.borderColor = "var(--border-color)"; if (osmbLayer) { osmbLayer.destroy(); osmbLayer = null; } }
     }
 </script>
 </body>
