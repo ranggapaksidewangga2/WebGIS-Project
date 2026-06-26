@@ -54,7 +54,6 @@
         .btn-float .icon { font-size: 14px; }
         .btn-float .label { font-size: 7px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
 
-        /* TOC ACCORDION AREA (NESTED FOLDERS) */
         #toc-sidebar { position: absolute; top: 120px; left: 15px; width: 340px; max-height: calc(100vh - 190px); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; overflow-y: auto; display: block; }
         .toc-header { padding: 12px 15px; background: var(--bg-panel); font-weight: 700; border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; z-index: 2; }
         .toc-card { margin: 10px; background: var(--bg-base); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; }
@@ -94,6 +93,8 @@
         .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .input-row label { font-weight: 600; color: var(--text-muted); }
         .input-row input[type="number"], .input-row input[type="text"] { width: 100px; text-align: right; }
+        .slider { flex: 1; height: 3px; background: var(--border-color); appearance: none; outline: none; border-radius: 2px;}
+        .slider::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer;}
     </style>
 </head>
 <body>
@@ -165,48 +166,13 @@
 
 <div id="toc-sidebar">
     <div class="toc-header">Table of Contents</div>
-    
-    <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-jalan', this)"><span>▶ Database: Jalan</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('jalan', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('jalan')">Zoom Tabel</button></div>
-        <div class="toc-feature-list" id="list-jalan"></div>
-    </div>
-    
-    <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-landuse', this)"><span>▶ Database: Landuse</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('landuse', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('landuse')">Zoom Tabel</button></div>
-        <div class="toc-feature-list" id="list-landuse"></div>
-    </div>
-    
-    <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-tower', this)"><span>▶ Database: Tower</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('tower', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('tower')">Zoom Tabel</button></div>
-        <div class="toc-feature-list" id="list-tower"></div>
-    </div>
-    
-    <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-wilayah', this)"><span>▶ Database: Wilayah</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('wilayah', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('wilayah')">Zoom Tabel</button></div>
-        <div class="toc-feature-list" id="list-wilayah"></div>
-    </div>
-    
-    <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-shp_poligon', this)"><span>▶ Layer: SHP Poligon</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_poligon', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_poligon')">Zoom Semua</button></div>
-        <div class="toc-feature-list" id="list-shp_poligon"></div>
-    </div>
-    
-    <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-shp_garis', this)"><span>▶ Layer: SHP Garis / Rute</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_garis', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_garis')">Zoom Semua</button></div>
-        <div class="toc-feature-list" id="list-shp_garis"></div>
-    </div>
-    
-    <div class="toc-card">
-        <div class="toc-card-title" onclick="toggleTOCList('list-shp_titik', this)"><span>▶ Layer: SHP Titik</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div>
-        <div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_titik', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_titik')">Zoom Semua</button></div>
-        <div class="toc-feature-list" id="list-shp_titik"></div>
-    </div>
+    <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-jalan', this)"><span>▶ Database: Jalan</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('jalan', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('jalan')">Zoom Tabel</button></div><div class="toc-feature-list" id="list-jalan"></div></div>
+    <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-landuse', this)"><span>▶ Database: Landuse</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('landuse', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('landuse')">Zoom Tabel</button></div><div class="toc-feature-list" id="list-landuse"></div></div>
+    <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-tower', this)"><span>▶ Database: Tower</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('tower', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('tower')">Zoom Tabel</button></div><div class="toc-feature-list" id="list-tower"></div></div>
+    <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-wilayah', this)"><span>▶ Database: Wilayah</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('wilayah', this)">Hide Tabel</button><button class="btn-toc-action" onclick="zoomKeLayer('wilayah')">Zoom Tabel</button></div><div class="toc-feature-list" id="list-wilayah"></div></div>
+    <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-shp_poligon', this)"><span>▶ Layer: SHP Poligon</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_poligon', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_poligon')">Zoom Semua</button></div><div class="toc-feature-list" id="list-shp_poligon"></div></div>
+    <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-shp_garis', this)"><span>▶ Layer: SHP Garis / Rute</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_garis', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_garis')">Zoom Semua</button></div><div class="toc-feature-list" id="list-shp_garis"></div></div>
+    <div class="toc-card"><div class="toc-card-title" onclick="toggleTOCList('list-shp_titik', this)"><span>▶ Layer: SHP Titik</span> <span style="font-size:9px; font-weight:normal; color:var(--text-muted);">(Buka)</span></div><div class="toc-controls"><button class="btn-toc-action" onclick="toggleTabelVis('shp_titik', this)">Hide Semua</button><button class="btn-toc-action" onclick="zoomKeLayer('shp_titik')">Zoom Semua</button></div><div class="toc-feature-list" id="list-shp_titik"></div></div>
 </div>
 
 <div id="modalDronePlanner" class="modal-overlay">
@@ -236,22 +202,35 @@
 
 <div id="modalBatimetri" class="modal-overlay">
     <div class="modal-box">
-        <div class="modal-box-header"><span>🌊 Generator Lajur Batimetri</span><span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span></div>
+        <div class="modal-box-header"><span>🌊 Generator Survey / Batimetri</span><span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span></div>
         <div class="modal-box-body">
             <div id="batiBaruSection">
-                <label>Nama Layer:</label><input type="text" id="batiNama" class="modal-input" placeholder="Survey_Batimetri_1">
-                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
-                    <label style="color: var(--text-main); font-weight: 700;">LAJUR UTAMA</label><label style="margin-top: 8px; display: block;">Interval (m):</label><input type="number" id="batiInterval" class="modal-input" value="50" min="1">
-                    <label>Arah Sapuan:</label><select id="batiMainOrient" class="modal-input"><option value="horizontal|top-down">Horizontal (Atas -> Bawah)</option><option value="horizontal|bottom-up">Horizontal (Bawah -> Atas)</option><option value="vertical|left-right">Vertikal (Kiri -> Kanan)</option><option value="vertical|right-left">Vertikal (Kanan -> Kiri)</option></select>
+                <label>Nama Layer Rute:</label><input type="text" id="batiNama" class="modal-input" placeholder="Survey_Batimetri_1">
+                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-top: 10px; margin-bottom: 10px;">
+                    <label style="color: var(--text-main); font-weight: 700;">GAYA LINTASAN / JALUR</label>
+                    <label style="margin-top: 8px; display: block;">Lengkungan Belokan (<span id="lblBatiCurve">100</span>%):</label>
+                    <input type="range" id="batiCurve" class="slider" min="0" max="100" value="100" style="width: 100%; margin-top: 5px; margin-bottom: 8px;" oninput="document.getElementById('lblBatiCurve').innerText=this.value">
+                    <p style="font-size:9px; color:var(--text-muted); margin:0;">*0% = Sudut Tajam (Kotak) | 100% = U-Turn Penuh (Bulat).</p>
                 </div>
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
-                    <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS</label><label style="margin-top: 8px; display: block;">Interval (m):</label><input type="number" id="batiCrossInterval" class="modal-input" value="500" min="1">
-                    <label>Arah Sapuan:</label><select id="batiCrossOrient" class="modal-input"><option value="vertical|left-right">Vertikal (Kiri -> Kanan)</option><option value="vertical|right-left">Vertikal (Kanan -> Kiri)</option><option value="horizontal|top-down">Horizontal (Atas -> Bawah)</option><option value="horizontal|bottom-up">Horizontal (Bawah -> Atas)</option></select>
+                    <label style="color: var(--text-main); font-weight: 700;">LAJUR UTAMA (Sejajar Poligon)</label>
+                    <label style="margin-top: 8px; display: block;">Interval (m):</label>
+                    <input type="number" id="batiInterval" class="modal-input" value="50" min="1">
+                </div>
+                <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
+                    <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS (Tegak Lurus)</label>
+                    <label style="margin-top: 8px; display: block;">Interval (m):</label>
+                    <input type="number" id="batiCrossInterval" class="modal-input" value="500" min="0">
+                    <p style="font-size:9px; color:var(--text-muted); margin-top:5px; margin-bottom:0;">*Isi 0 jika tidak ingin membuat lajur lintas.</p>
                 </div>
                 <button class="modal-btn" style="background: var(--success); color: white;" onclick="mulaiGambarBatimetri()">GAMBAR AREA BARU</button>
             </div>
             <div id="batiEditSection" style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                <p style="font-weight:700; margin-top:0;">Edit Tanpa Gambar Ulang</p><label>Interval Utama BARU (m):</label><input type="number" id="editBatiInterval" class="modal-input" min="1"><label>Interval Lintas BARU (m):</label><input type="number" id="editBatiCrossInterval" class="modal-input" min="1"><button class="modal-btn" style="background: var(--warning); color: white; border-color: var(--warning);" onclick="prosesEditBatimetri()">UPDATE LAJUR</button>
+                <p style="font-weight:700; margin-top:0;">Edit Tanpa Gambar Ulang</p>
+                <label>Lengkungan BARU (%):</label><input type="range" id="editBatiCurve" class="slider" min="0" max="100" style="width:100%; margin-bottom:10px;">
+                <label>Interval Utama BARU (m):</label><input type="number" id="editBatiInterval" class="modal-input" min="1">
+                <label>Interval Lintas BARU (m):</label><input type="number" id="editBatiCrossInterval" class="modal-input" min="0">
+                <button class="modal-btn" style="background: var(--warning); color: white; border-color: var(--warning);" onclick="prosesEditBatimetri()">UPDATE LAJUR</button>
             </div>
         </div>
     </div>
@@ -344,6 +323,9 @@
     let currentUser = null; let currentLoginType = 'user'; let heartbeatInterval, onlinePollingInterval;
     const defaultColors = { 'jalan': '#3b82f6', 'landuse': '#10b981', 'tower': '#f59e0b', 'wilayah': '#8b5cf6', 'shp_poligon': '#06b6d4', 'shp_garis': '#ef4444', 'shp_titik': '#ec4899' };
 
+    const tabelList = ['jalan', 'landuse', 'tower', 'wilayah'];
+    tabelList.forEach(t => { fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS properties jsonb DEFAULT '{}'::jsonb;` }) }).catch(()=>{}); });
+
     var map = L.map('map', { preferCanvas: true, zoomControl: false }).setView([-5.3971, 105.2668], 10);
     L.control.zoom({ position: 'topright' }).addTo(map);
     
@@ -368,12 +350,7 @@
 
     var layersData = { jalan: L.layerGroup().addTo(map), landuse: L.layerGroup().addTo(map), tower: L.layerGroup().addTo(map), wilayah: L.layerGroup().addTo(map), shp_poligon: L.layerGroup().addTo(map), shp_garis: L.layerGroup().addTo(map), shp_titik: L.layerGroup().addTo(map) };
 
-    function toggleTOCList(listId, el) {
-        var list = document.getElementById(listId);
-        if(list.style.display === 'block') { list.style.display = 'none'; el.innerHTML = el.innerHTML.replace('▼', '▶').replace('(Tutup)', '(Buka)'); } 
-        else { list.style.display = 'block'; el.innerHTML = el.innerHTML.replace('▶', '▼').replace('(Buka)', '(Tutup)'); }
-    }
-
+    function toggleTOCList(listId, el) { var list = document.getElementById(listId); if(list.style.display === 'block') { list.style.display = 'none'; el.innerHTML = el.innerHTML.replace('▼', '▶').replace('(Tutup)', '(Buka)'); } else { list.style.display = 'block'; el.innerHTML = el.innerHTML.replace('▶', '▼').replace('(Buka)', '(Tutup)'); } }
     function toggleTabelVis(nama, btn) { var lyr = layersData[nama]; if (map.hasLayer(lyr)) { map.removeLayer(lyr); btn.innerHTML = "Show"; } else { map.addLayer(lyr); btn.innerHTML = "Hide"; } }
 
     function cariWilayah() {
@@ -415,96 +392,49 @@
         circleLokasi = L.circle(e.latlng, e.accuracy, { color: '#2563eb', fillOpacity: 0.2 }).addTo(map); markerLokasi = L.marker(e.latlng).addTo(map).bindPopup("Lokasi Anda").openPopup();
     });
 
-    // --- SITEM WARNA & GROUPING TOC BARU (PER FILE) ---
     function gantiWarnaManual(tabel, id, newColor) {
         let pkKolom = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel;
         let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || '{"color": "${newColor}"}'::jsonb WHERE ${pkKolom} = '${id}'`;
-        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) })
-        .then(() => { layersData[tabel].eachLayer(layerGroup => { if(layerGroup.featureId == id) { layerGroup.eachLayer(layer => { if(layer.setStyle) layer.setStyle({color: newColor, fillColor: newColor}); }); } }); });
+        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) }).then(() => { layersData[tabel].eachLayer(layerGroup => { if(layerGroup.featureId == id) { layerGroup.eachLayer(layer => { if(layer.setStyle) layer.setStyle({color: newColor, fillColor: newColor}); }); } }); });
     }
 
     function autoColorGroup(tabel, groupName) {
-        // HANYA MENGUBAH WARNA DATA YANG NAMA FILE/LAYERNYA SESUAI DENGAN FOLDER YANG DIKLIK
         let col = tabel.startsWith('shp_') ? 'nama_layer' : (tabel==='jalan'?'nama_jalan':(tabel==='landuse'?'penggunaan':(tabel==='wilayah'?'nama_kabupaten':'id_provider')));
-        let safeName = groupName.replace(/'/g, "''"); // Aman dari tanda kutip
+        let safeName = groupName.replace(/'/g, "''");
         let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || jsonb_build_object('color', (ARRAY['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000', '#ff00ff', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ffa500', '#8a2be2', '#7fff00'])[floor(random() * 30 + 1)::int]) WHERE ${col} = '${safeName}'`;
         fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) }).then(() => refreshSemuaData());
     }
 
-    function toggleGroupVis(tabel, groupName) {
-        layersData[tabel].eachLayer(l => { if(l.groupName === groupName) { if(map.hasLayer(l)) map.removeLayer(l); else map.addLayer(l); } });
-    }
+    function toggleGroupVis(tabel, groupName) { layersData[tabel].eachLayer(l => { if(l.groupName === groupName) { if(map.hasLayer(l)) map.removeLayer(l); else map.addLayer(l); } }); }
+    function zoomKeGroup(tabel, groupName) { var b = L.latLngBounds(); layersData[tabel].eachLayer(l => { if (l.groupName === groupName) { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); } }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
-    function zoomKeGroup(tabel, groupName) {
-        var b = L.latLngBounds(); 
-        layersData[tabel].eachLayer(l => { if (l.groupName === groupName) { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); } }); 
-        if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); 
-    }
-
-    // --- PEMBACA NAMA DESA & PEMBUAT STRUKTUR FOLDER ---
     function muatDataPeta(tabel, layerGroup, warnaLayerDefault) { 
         fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `SELECT *, ST_AsGeoJSON(geom) as geometry FROM ${tabel}` }) })
         .then(res => res.json()).then(data => { 
-            let listContainer = document.getElementById(`list-${tabel}`);
-            if(listContainer) listContainer.innerHTML = '';
-            
-            let groupedFeatures = {}; // Wadah untuk memisahkan HTML per nama file
-
+            let listContainer = document.getElementById(`list-${tabel}`); if(listContainer) listContainer.innerHTML = '';
+            let groupedFeatures = {};
             if (data.data) { 
                 data.data.forEach(row => { 
                     if (row.geometry) { 
                         let props = typeof row.properties === 'string' ? JSON.parse(row.properties || '{}') : (row.properties || {});
                         let itemColor = props.color || warnaLayerDefault;
-
                         let p = `<div style="text-transform:uppercase; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--border-color); padding-bottom:5px; color:var(--text-main);">${tabel}</div><table class="popup-table">`; 
                         for(let k in row) { if(k !== 'geometry' && k !== 'geom') { if(k === 'properties' && row[k]) { let propsObj = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; for(let pk in propsObj) p += `<tr><td>${pk}</td><td>: ${propsObj[pk]}</td></tr>`; } else { p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; } } } 
                         p += `</table>`; 
-                        
                         let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: itemColor, color: "#fff", weight: 1, fillOpacity: 0.8 }) });
-                        
-                        let pkField = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel;
-                        let featureId = row[pkField];
-                        
-                        // Menentukan nama Folder (berdasarkan nama file shp)
+                        let pkField = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel; let featureId = row[pkField];
                         let baseName = row.nama_layer || row.nama_jalan || row.penggunaan || row.nama_kabupaten || row.id_provider || 'Data Umum';
-                        leafletLayer.featureId = featureId;
-                        leafletLayer.groupName = baseName;
-                        leafletLayer.bindPopup(p).addTo(layerGroup); 
-
-                        // Menentukan nama data di dalam folder (mengambil nama desa dari DBF)
+                        leafletLayer.featureId = featureId; leafletLayer.groupName = baseName; leafletLayer.bindPopup(p).addTo(layerGroup); 
                         let attrName = props.NAMOBJ || props.WADMKD || props.DESA || props.KELURAHAN || props.WADMKC || props.KECAMATAN || props.NAMA || props.NAME || props.Name || props.nama || props.KABUPATEN;
                         let featureDisplayName = attrName ? attrName : `Data ID: ${featureId}`;
-
                         if(!groupedFeatures[baseName]) groupedFeatures[baseName] = '';
-                        groupedFeatures[baseName] += `
-                            <div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #cbd5e1; padding-left:4px;">
-                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;" title="${featureDisplayName}">📍 ${featureDisplayName}</span>
-                                <input type="color" value="${itemColor}" onchange="gantiWarnaManual('${tabel}', '${featureId}', this.value)" style="padding:0; border:1px solid #cbd5e1; width:24px; height:24px; cursor:pointer; border-radius:4px;">
-                            </div>`;
+                        groupedFeatures[baseName] += `<div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #cbd5e1; padding-left:4px;"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;" title="${featureDisplayName}">📍 ${featureDisplayName}</span><input type="color" value="${itemColor}" onchange="gantiWarnaManual('${tabel}', '${featureId}', this.value)" style="padding:0; border:1px solid #cbd5e1; width:24px; height:24px; cursor:pointer; border-radius:4px;"></div>`;
                     } 
                 }); 
-
-                // Membuat HTML Accordion Folder
                 let finalHtml = '';
                 for(let gName in groupedFeatures) {
-                    let safeGroupId = `group-${tabel}-${gName.replace(/[^a-zA-Z0-9]/g, '')}`;
-                    let safeStrName = gName.replace(/'/g, "\\'"); // Aman untuk tanda kutip
-                    finalHtml += `
-                        <div style="margin-top: 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #ffffff; overflow:hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                            <div style="font-size: 11px; font-weight: 700; padding: 8px; background: #e2e8f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom:1px solid #cbd5e1; color: var(--text-main);" onclick="toggleTOCList('${safeGroupId}', this)">
-                                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">📁 File: ${gName}</span>
-                                <span style="font-size:9px; color:var(--text-muted);">(Buka)</span>
-                            </div>
-                            <div style="display:flex; gap:4px; padding:6px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
-                                <button class="btn-toc-action" onclick="toggleGroupVis('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">👁️ Hide</button>
-                                <button class="btn-toc-action" onclick="zoomKeGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">🎯 Zoom</button>
-                                <button class="btn-toc-action" onclick="autoColorGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px; background:var(--accent); color:#fff; border:none; font-weight:bold;">🎨 Auto Color</button>
-                            </div>
-                            <div id="${safeGroupId}" style="display: none; max-height: 250px; overflow-y: auto; padding: 6px; background:#fff;">
-                                ${groupedFeatures[gName]}
-                            </div>
-                        </div>
-                    `;
+                    let safeGroupId = `group-${tabel}-${gName.replace(/[^a-zA-Z0-9]/g, '')}`; let safeStrName = gName.replace(/'/g, "\\'");
+                    finalHtml += `<div style="margin-top: 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #ffffff; overflow:hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);"><div style="font-size: 11px; font-weight: 700; padding: 8px; background: #e2e8f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom:1px solid #cbd5e1; color: var(--text-main);" onclick="toggleTOCList('${safeGroupId}', this)"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">📁 File: ${gName}</span><span style="font-size:9px; color:var(--text-muted);">(Buka)</span></div><div style="display:flex; gap:4px; padding:6px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;"><button class="btn-toc-action" onclick="toggleGroupVis('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">👁️ Hide</button><button class="btn-toc-action" onclick="zoomKeGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">🎯 Zoom</button><button class="btn-toc-action" onclick="autoColorGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px; background:var(--accent); color:#fff; border:none; font-weight:bold;">🎨 Auto Color</button></div><div id="${safeGroupId}" style="display: none; max-height: 250px; overflow-y: auto; padding: 6px; background:#fff;">${groupedFeatures[gName]}</div></div>`;
                 }
                 if(listContainer) listContainer.innerHTML = finalHtml;
             } 
@@ -513,7 +443,6 @@
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
-    // --- SISA FITUR ---
     var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
     function inisiasiModeDrone() { alert("Silakan gambar area poligon di peta untuk batas terbang Drone."); isDrawingDroneMode = true; map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#f59e0b', dashArray: '5,5' }, pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 } }); }
     function updateLivePreview() { tempDroneLayer.clearLayers(); if(!currentDronePolygon) return; var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 }; document.getElementById('lblAngle').innerText = config.angle; var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config); if(features.length > 0) { var f = features[0]; L.geoJSON(f, { style: { color: '#10b981', weight: 2 } }).addTo(tempDroneLayer); var coords = f.geometry.coordinates; if(coords.length > 0) { L.circleMarker([coords[0][1], coords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); } document.getElementById('droneStats').innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Jarak:</span> <b style="color:#fff;">${f.properties.total_jarak_km} km</b></div><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Est. Waktu:</span> <b style="color:#fff;">${f.properties.estimasi_waktu_menit} Menit</b></div><div style="display:flex; justify-content:space-between;"><span>Jalur (Waypoints):</span> <b style="color:#fff;">${coords.length} Titik</b></div>`; } else { document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; } }
@@ -521,12 +450,59 @@
     function simpanMisiDrone() { if(!currentDronePolygon) return; var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 }; var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config); if(features.length === 0) return alert("Gagal menyimpan rute! Pastikan area memadai."); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: config.nama, pengupload: currentUser.username, features: features, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan ke Tabel SHP Garis!"); batalMisiDrone(); refreshSemuaData(); }); }
     function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
-    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, mainOrient: "horizontal", mainDir: "top-down", crossInterval: 500, crossOrient: "vertical", crossDir: "left-right" };
-    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; } }
-    function mulaiGambarBatimetri() { batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value); var m = document.getElementById('batiMainOrient').value.split('|'); batiConfig.mainOrient = m[0]; batiConfig.mainDir = m[1]; var c = document.getElementById('batiCrossOrient').value.split('|'); batiConfig.crossOrient = c[0]; batiConfig.crossDir = c[1]; if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi data!"); document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon'); }
-    function generateBatimetriFeatures(polyData, config) { function buildTrack(orient, dir, intv) { var bbox = turf.bbox(polyData), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3], continuousCoords = [], flip = false, margin = 0.05; if (orient === 'horizontal') { var startY = (dir === 'top-down') ? maxY : minY, stepDir = (dir === 'top-down') ? 180 : 0, distTotal = turf.distance(turf.point([minX, minY]), turf.point([minX, maxY]), {units: 'meters'}); var numLines = Math.ceil(distTotal / intv) + 2, refPt = turf.point([minX, startY]); for(let i=0; i<=numLines; i++) { var lat = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[1]; var sweepLine = turf.lineString([[minX - margin, lat], [maxX + margin, lat]]), split = null; try { split = turf.lineSplit(sweepLine, polyData); } catch(e){} var segments = []; if(split && split.features.length > 0) split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); }); if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var coords = segments[0].geometry.coordinates; if (coords[0][0] > coords[coords.length-1][0]) coords.reverse(); if(flip) coords.reverse(); flip = !flip; continuousCoords.push(...coords); } } } else { var startX = (dir === 'left-right') ? minX : maxX, stepDir = (dir === 'left-right') ? 90 : -90, distTotal = turf.distance(turf.point([minX, minY]), turf.point([maxX, minY]), {units: 'meters'}); var numLines = Math.ceil(distTotal / intv) + 2, refPt = turf.point([startX, minY]); for(let i=0; i<=numLines; i++) { var lng = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[0]; var sweepLine = turf.lineString([[lng, minY - margin], [lng, maxY + margin]]), split = null; try { split = turf.lineSplit(sweepLine, polyData); } catch(e){} var segments = []; if(split && split.features.length > 0) split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); }); if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var coords = segments[0].geometry.coordinates; if (coords[0][1] > coords[coords.length-1][1]) coords.reverse(); if(flip) coords.reverse(); flip = !flip; continuousCoords.push(...coords); } } } if(continuousCoords.length > 1) return turf.lineString(continuousCoords); return null; } var results = [], mainLine = buildTrack(config.mainOrient, config.mainDir, config.interval); if(mainLine) { mainLine.properties = { type: "Main Lines" }; results.push(mainLine); } var crossLine = buildTrack(config.crossOrient, config.crossDir, config.crossInterval); if(crossLine) { crossLine.properties = { type: "Cross Lines" }; results.push(crossLine); } return results; }
+    // --- PERUBAHAN: ALGORITMA BATIMETRI OTOMATIS + INJEKSI LENGKUNGAN BEZIER ---
+    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, crossInterval: 500, curve: 100 };
+    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; document.getElementById('editBatiCurve').value = lastBatiConfig.curve; } }
+    function mulaiGambarBatimetri() { batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value); batiConfig.curve = parseFloat(document.getElementById('batiCurve').value); if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi data!"); document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); }
+    
+    function generateBatimetriFeatures(polyData, config) {
+        function getLongestEdgeAngle(poly) { var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; for(var i=0; i<coords.length-1; i++) { var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } } return angle; }
+        var baseAngle = getLongestEdgeAngle(polyData), centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -baseAngle, {pivot: centroid}), bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+
+        function buildTrack(isMain, intv) {
+            if(!intv || intv <= 0) return null;
+            var continuousCoords = [], flip = false, margin = 0.05, lines = [], curveDegree = config.curve || 0;
+            
+            if(isMain) {
+                var distX = turf.distance(turf.point([minX, minY]), turf.point([maxX, minY]), {units: 'meters'}), numLines = Math.ceil(distX / intv) + 2, refPt = turf.point([minX, minY]);
+                for(let i=0; i<=numLines; i++) { var lng = turf.destination(refPt, i * intv, 90, {units: 'meters'}).geometry.coordinates[0]; lines.push(turf.lineString([[lng, minY - margin], [lng, maxY + margin]])); }
+            } else {
+                var distY = turf.distance(turf.point([minX, minY]), turf.point([minX, maxY]), {units: 'meters'}), numLines = Math.ceil(distY / intv) + 2, refPt = turf.point([minX, minY]);
+                for(let i=0; i<=numLines; i++) { var lat = turf.destination(refPt, i * intv, 0, {units: 'meters'}).geometry.coordinates[1]; lines.push(turf.lineString([[minX - margin, lat], [maxX + margin, lat]])); }
+            }
+            
+            var rotatedLines = lines.map(l => turf.transformRotate(l, baseAngle, {pivot: centroid}));
+            rotatedLines.forEach(sweepLine => {
+                var split = null; try { split = turf.lineSplit(sweepLine, polyData); } catch(e){}
+                var segments = [];
+                if(split && split.features.length > 0) { split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segments.push(s); }); } 
+                else { if(turf.booleanPointInPolygon(turf.along(sweepLine, turf.length(sweepLine)/2), polyData)) segments.push(sweepLine); }
+                
+                if(segments.length > 0) { 
+                    segments.sort((a,b) => turf.length(b) - turf.length(a)); var coords = segments[0].geometry.coordinates; if(flip) coords.reverse(); flip = !flip; 
+                    
+                    if (continuousCoords.length > 1 && curveDegree > 0) {
+                        var p1 = continuousCoords[continuousCoords.length - 1], p_prev = continuousCoords[continuousCoords.length - 2], p2 = coords[0];
+                        var dist = turf.distance(turf.point(p1), turf.point(p2), {units: 'meters'});
+                        if (dist > 0 && dist < intv * 4) {
+                            var mid = turf.midpoint(turf.point(p1), turf.point(p2)), bear = turf.bearing(turf.point(p_prev), turf.point(p1)), pushDist = dist * (curveDegree / 100);
+                            var ctrlPt = turf.destination(mid, pushDist, bear, {units: 'meters'}).geometry.coordinates, numPts = 12;
+                            for(var j=1; j<numPts; j++) { var t = j / numPts, x = Math.pow(1-t, 2)*p1[0] + 2*(1-t)*t*ctrlPt[0] + Math.pow(t, 2)*p2[0], y = Math.pow(1-t, 2)*p1[1] + 2*(1-t)*t*ctrlPt[1] + Math.pow(t, 2)*p2[1]; continuousCoords.push([x, y]); }
+                        }
+                    }
+                    continuousCoords.push(...coords); 
+                }
+            });
+            if(continuousCoords.length > 1) return turf.lineString(continuousCoords); return null;
+        }
+
+        var results = [], mainLine = buildTrack(true, config.interval); if(mainLine) { mainLine.properties = { type: "Main Lines" }; results.push(mainLine); }
+        var crossLine = buildTrack(false, config.crossInterval); if(crossLine) { crossLine.properties = { type: "Cross Lines" }; results.push(crossLine); }
+        return results;
+    }
+
     function tangkapGambarBatimetri(polygonLayer) { var polyGeoJSON = polygonLayer.toGeoJSON(), resultFeatures = generateBatimetriFeatures(polyGeoJSON, batiConfig); if (resultFeatures.length === 0) { alert("Area terlalu kecil/Interval besar!"); map.removeLayer(polygonLayer); return; } lastBatiPolyGeoJSON = polyGeoJSON; lastBatiConfig = Object.assign({}, batiConfig); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: batiConfig.nama, pengupload: currentUser.username, features: resultFeatures, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Lajur Batimetri Dibuat!"); map.removeLayer(polygonLayer); refreshSemuaData(); }); }
-    function prosesEditBatimetri() { lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); lastBatiConfig.crossInterval = parseFloat(document.getElementById('editBatiCrossInterval').value); var rf = generateBatimetriFeatures(lastBatiPolyGeoJSON, lastBatiConfig); if(!rf || rf.length === 0) return alert("Interval tidak valid."); fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) }).then(() => fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: lastBatiConfig.nama, pengupload: currentUser.username, features: rf, geom_type: 'LineString' }) })).then(() => { alert("Diperbarui!"); document.getElementById('modalBatimetri').style.display='none'; refreshSemuaData(); }); }
+    function prosesEditBatimetri() { lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); lastBatiConfig.crossInterval = parseFloat(document.getElementById('editBatiCrossInterval').value); lastBatiConfig.curve = parseFloat(document.getElementById('editBatiCurve').value); var rf = generateBatimetriFeatures(lastBatiPolyGeoJSON, lastBatiConfig); if(!rf || rf.length === 0) return alert("Interval tidak valid."); fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) }).then(() => fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: lastBatiConfig.nama, pengupload: currentUser.username, features: rf, geom_type: 'LineString' }) })).then(() => { alert("Diperbarui!"); document.getElementById('modalBatimetri').style.display='none'; refreshSemuaData(); }); }
 
     map.on('pm:create', async function (e) {
         var layer = e.layer; 
