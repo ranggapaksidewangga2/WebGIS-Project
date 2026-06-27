@@ -221,7 +221,7 @@
                     
                     <label style="margin-top: 8px; display: block;">Arah Sapuan & Acuan Start:</label>
                     <select id="batiMainOrient" class="modal-input">
-                        <option value="longest|inward" selected>★ Otomatis (Mulai dari Sisi Terpanjang)</option>
+                        <option value="longest|inward" selected>★ Otomatis (Sejajar Sisi Terpanjang)</option>
                         <option value="horizontal|top-down">Horizontal (Atas -> Bawah)</option>
                         <option value="horizontal|bottom-up">Horizontal (Bawah -> Atas)</option>
                         <option value="vertical|left-right">Vertikal (Kiri -> Kanan)</option>
@@ -233,6 +233,14 @@
                     <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS (Tegak Lurus)</label>
                     <label style="margin-top: 8px; display: block;">Interval (m):</label>
                     <input type="number" id="batiCrossInterval" class="modal-input" value="500" min="0">
+                    
+                    <label style="margin-top: 8px; display: block;">Arah Sapuan Lintas:</label>
+                    <select id="batiCrossOrient" class="modal-input">
+                        <option value="vertical|left-right">Vertikal (Kiri -> Kanan)</option>
+                        <option value="vertical|right-left">Vertikal (Kanan -> Kiri)</option>
+                        <option value="horizontal|top-down">Horizontal (Atas -> Bawah)</option>
+                        <option value="horizontal|bottom-up">Horizontal (Bawah -> Atas)</option>
+                    </select>
                     <p style="font-size:9px; color:var(--text-muted); margin-top:5px; margin-bottom:0;">*Isi 0 jika tidak ingin membuat lajur lintas.</p>
                 </div>
                 
@@ -464,82 +472,79 @@
     function simpanMisiDrone() { if(!currentDronePolygon) return; var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 }; var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config); if(features.length === 0) return alert("Gagal menyimpan rute! Pastikan area memadai."); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: config.nama, pengupload: currentUser.username, features: features, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan ke Tabel SHP Garis!"); batalMisiDrone(); refreshSemuaData(); }); }
     function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
-    // --- PERBAIKAN: ALGORITMA BATIMETRI OTOMATIS (SISI TERPANJANG) + MANUAL KEMBALI + BEZIER ---
-    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, crossInterval: 500, curve: 100, mainOrient: "longest|inward" };
+    // --- FITUR BATIMETRI (PERBAIKAN ALGORITMA ROTASI & BEZIER) ---
+    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, crossInterval: 500, curve: 100, mainOrient: "longest|inward", crossOrient: "vertical|left-right" };
     function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; document.getElementById('editBatiCurve').value = lastBatiConfig.curve; } }
-    function mulaiGambarBatimetri() { batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value); batiConfig.curve = parseFloat(document.getElementById('batiCurve').value); batiConfig.mainOrient = document.getElementById('batiMainOrient').value; if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi data!"); document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); }
+    
+    function mulaiGambarBatimetri() { 
+        batiConfig.nama = document.getElementById('batiNama').value; 
+        batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); 
+        batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value); 
+        batiConfig.curve = parseFloat(document.getElementById('batiCurve').value); 
+        batiConfig.mainOrient = document.getElementById('batiMainOrient').value; 
+        batiConfig.crossOrient = document.getElementById('batiCrossOrient').value; 
+        if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi data!"); 
+        document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); 
+    }
     
     function generateBatimetriFeatures(polyData, config) {
-        var orientParts = config.mainOrient.split('|'); var orientMode = orientParts[0]; var orientDir = orientParts[1];
+        var isAuto = (config.mainOrient === 'longest|inward');
+        var orientMode = config.mainOrient.split('|')[0], orientDir = config.mainOrient.split('|')[1];
+        var cOrientMode = config.crossOrient ? config.crossOrient.split('|')[0] : 'vertical', cOrientDir = config.crossOrient ? config.crossOrient.split('|')[1] : 'left-right';
         
+        var baseAngle = 0;
+        if (isAuto) {
+            var coords = turf.getCoords(polyData)[0], maxD = 0;
+            for(var i=0; i<coords.length-1; i++) { 
+                var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); 
+                if(d > maxD) { maxD = d; baseAngle = turf.bearing(p1, p2); } 
+            }
+        }
+        var centroid = turf.centroid(polyData);
+
         function buildTrack(isMain, intv) {
             if(!intv || intv <= 0) return null;
-            var continuousCoords = [], flip = false, lines = [], curveDegree = config.curve || 0;
-            var margin = 0.05; // margin perpanjangan garis sebelum di potong (clip)
-
-            if (orientMode === 'longest') {
-                // ALGORITMA: OTOMATIS SISI TERPANJANG
-                var coords = turf.getCoords(polyData)[0]; var maxD = 0, edgeP1, edgeP2;
-                for(var i=0; i<coords.length-1; i++) { var d = turf.distance(turf.point(coords[i]), turf.point(coords[i+1])); if(d > maxD) { maxD = d; edgeP1 = coords[i]; edgeP2 = coords[i+1]; } }
-                var edgeBearing = turf.bearing(turf.point(edgeP1), turf.point(edgeP2));
-                
-                // Cari arah sapuan (harus masuk ke dalam poligon)
-                var sweepBearing = edgeBearing + 90; var midEdge = turf.midpoint(turf.point(edgeP1), turf.point(edgeP2));
-                var testPt = turf.destination(midEdge, intv/2, sweepBearing, {units: 'meters'});
-                if (!turf.booleanPointInPolygon(testPt, polyData)) sweepBearing = edgeBearing - 90;
-
-                // Putar sapuan 90 derajat jika ini adalah Lajur Lintas
-                if (!isMain) sweepBearing += 90;
-
-                var bbox = turf.bbox(polyData); var polyDiagonal = turf.distance(turf.point([bbox[0], bbox[1]]), turf.point([bbox[2], bbox[3]]));
-                var extP1 = turf.destination(turf.point(edgeP1), polyDiagonal, edgeBearing - 180, {units: 'meters'}).geometry.coordinates;
-                var extP2 = turf.destination(turf.point(edgeP2), polyDiagonal, edgeBearing, {units: 'meters'}).geometry.coordinates;
-
-                var numLines = Math.ceil(polyDiagonal / intv);
-                for(let i=0; i<=numLines; i++) {
-                    var shiftP1 = turf.destination(turf.point(extP1), i * intv, sweepBearing, {units: 'meters'}).geometry.coordinates;
-                    var shiftP2 = turf.destination(turf.point(extP2), i * intv, sweepBearing, {units: 'meters'}).geometry.coordinates;
-                    lines.push(turf.lineString([shiftP1, shiftP2]));
-                }
-            } else {
-                // ALGORITMA: MANUAL (ATAS-BAWAH / KIRI-KANAN)
-                var bbox = turf.bbox(polyData), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
-                // Jika Lajur lintas, tukar paksa mode orientasi
-                var currentOrient = isMain ? orientMode : (orientMode === 'horizontal' ? 'vertical' : 'horizontal');
-                var currentDir = isMain ? orientDir : (orientMode === 'horizontal' ? 'left-right' : 'top-down');
-
-                if (currentOrient === 'horizontal') {
-                    var startY = (currentDir === 'top-down') ? maxY : minY; var stepDir = (currentDir === 'top-down') ? 180 : 0;
-                    var distTotal = turf.distance(turf.point([minX, minY]), turf.point([minX, maxY]), {units: 'meters'});
-                    var numLines = Math.ceil(distTotal / intv) + 2, refPt = turf.point([minX, startY]);
-                    for(let i=0; i<=numLines; i++) { var lat = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[1]; lines.push(turf.lineString([[minX - margin, lat], [maxX + margin, lat]])); }
-                } else {
-                    var startX = (currentDir === 'left-right') ? minX : maxX; var stepDir = (currentDir === 'left-right') ? 90 : -90;
-                    var distTotal = turf.distance(turf.point([minX, minY]), turf.point([maxX, minY]), {units: 'meters'});
-                    var numLines = Math.ceil(distTotal / intv) + 2, refPt = turf.point([startX, minY]);
-                    for(let i=0; i<=numLines; i++) { var lng = turf.destination(refPt, i * intv, stepDir, {units: 'meters'}).geometry.coordinates[0]; lines.push(turf.lineString([[lng, minY - margin], [lng, maxY + margin]])); }
-                }
+            var continuousCoords = [], flip = false, curveDegree = config.curve || 0;
+            
+            var lineAngle = 0;
+            if(isAuto) { lineAngle = isMain ? baseAngle : baseAngle + 90; }
+            else { if(isMain) lineAngle = (orientMode === 'horizontal') ? 90 : 0; else lineAngle = (cOrientMode === 'horizontal') ? 90 : 0; }
+            
+            var rotatedPoly = turf.transformRotate(polyData, -lineAngle, {pivot: centroid});
+            var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+            var lines = [], margin = 0.05, distW = turf.distance(turf.point([minX, minY]), turf.point([maxX, minY]), {units: 'meters'}), numLines = Math.floor(distW / intv) + 1;
+            
+            var reverseSweep = false;
+            if(!isAuto) { 
+                var mode = isMain ? orientMode : cOrientMode, dir = isMain ? orientDir : cOrientDir; 
+                if(mode === 'horizontal' && dir === 'top-down') reverseSweep = true; 
+                if(mode === 'vertical' && dir === 'right-left') reverseSweep = true; 
             }
             
-            // Proses pemotongan garis dengan poligon + injeksi efek belokan Bezier
+            var refPtLeft = turf.point([minX, minY]), refPtRight = turf.point([maxX, minY]);
+            for (let i = 0; i <= numLines; i++) { 
+                var shiftPt; 
+                if(reverseSweep) shiftPt = turf.destination(refPtRight, i * intv, -90, {units: 'meters'}).geometry.coordinates; 
+                else shiftPt = turf.destination(refPtLeft, i * intv, 90, {units: 'meters'}).geometry.coordinates; 
+                var x = shiftPt[0]; lines.push(turf.lineString([[x, minY - margin], [x, maxY + margin]])); 
+            }
+            
+            var originalLines = lines.map(l => turf.transformRotate(l, lineAngle, {pivot: centroid}));
             var validSegments = [];
-            lines.forEach(sweepLine => {
-                var split = null; try { split = turf.lineSplit(sweepLine, polyData); } catch(e){}
-                var segs = [];
+            originalLines.forEach(sweepLine => { 
+                var split = null; try { split = turf.lineSplit(sweepLine, polyData); } catch(e){} 
+                var segs = []; 
                 if(split && split.features.length > 0) { split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), polyData)) segs.push(s); }); } 
-                else { if(turf.booleanPointInPolygon(turf.along(sweepLine, turf.length(sweepLine)/2), polyData)) segs.push(sweepLine); }
-                if(segs.length > 0) { segs.sort((a,b) => turf.length(b) - turf.length(a)); validSegments.push(segs[0]); }
+                else { if(turf.booleanPointInPolygon(turf.along(sweepLine, turf.length(sweepLine)/2), polyData)) segs.push(sweepLine); } 
+                if(segs.length > 0) { segs.sort((a,b) => turf.length(b) - turf.length(a)); validSegments.push(segs[0]); } 
             });
 
             for(let i=0; i<validSegments.length; i++) {
                 var coords = validSegments[i].geometry.coordinates; if(flip) coords.reverse(); flip = !flip;
-                
                 if (continuousCoords.length > 1 && curveDegree > 0) {
-                    var p1 = continuousCoords[continuousCoords.length - 1], p_prev = continuousCoords[continuousCoords.length - 2], p2 = coords[0];
-                    var dist = turf.distance(turf.point(p1), turf.point(p2), {units: 'meters'});
-                    if (dist > 0 && dist <= intv * 3) { // Hanya buat lengkungan jika jarak ke lajur berikutnya masuk akal
-                        var mid = turf.midpoint(turf.point(p1), turf.point(p2)), bear = turf.bearing(turf.point(p_prev), turf.point(p1)), pushDist = (dist / 2) * (curveDegree / 100);
-                        var ctrlPt = turf.destination(mid, pushDist, bear, {units: 'meters'}).geometry.coordinates, numPts = 10;
+                    var p1 = continuousCoords[continuousCoords.length - 1], p_prev = continuousCoords[continuousCoords.length - 2], p2 = coords[0], dist = turf.distance(turf.point(p1), turf.point(p2), {units: 'meters'});
+                    if (dist > 0 && dist <= intv * 4) {
+                        var mid = turf.midpoint(turf.point(p1), turf.point(p2)), bear = turf.bearing(turf.point(p_prev), turf.point(p1)), pushDist = (dist / 2) * (curveDegree / 100), ctrlPt = turf.destination(mid, pushDist, bear, {units: 'meters'}).geometry.coordinates, numPts = 12;
                         for(var j=1; j<numPts; j++) { var t = j / numPts, x = Math.pow(1-t, 2)*p1[0] + 2*(1-t)*t*ctrlPt[0] + Math.pow(t, 2)*p2[0], y = Math.pow(1-t, 2)*p1[1] + 2*(1-t)*t*ctrlPt[1] + Math.pow(t, 2)*p2[1]; continuousCoords.push([x, y]); }
                     }
                 }
