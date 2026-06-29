@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web GIS Minimalist Light - Flight Planner</title>
+    <title>WebGIS GeoMapper</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
@@ -31,10 +31,14 @@
         #map { height: calc(100vh - 110px); width: 100%; background: #e5e5e5; z-index: 1; }
         #koordinat-panel { position: absolute; bottom: 5px; left: 5px; background: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); color: var(--text-main); font-family: monospace; font-size: 10px; z-index: 1001; }
 
-        #search-panel { position: absolute; top: 100px; right: 60px; z-index: 1000; background: rgba(255, 255, 255, 0.95); padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; gap: 5px; backdrop-filter: blur(5px); }
-        #search-panel input { width: 150px; font-size: 11px; padding: 6px 10px; }
+        #search-panel { position: absolute; top: 100px; right: 60px; z-index: 1000; background: rgba(255, 255, 255, 0.95); padding: 6px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; backdrop-filter: blur(5px); }
+        #search-panel .search-box { display: flex; gap: 5px; }
+        #search-panel input { width: 180px; font-size: 11px; padding: 6px 10px; }
         #search-panel button { padding: 6px 10px; background: var(--bg-base); border: 1px solid var(--border-color); color: var(--text-main); font-size: 12px; }
         #search-panel button:hover { background: var(--bg-hover); }
+        #search-suggestions { list-style: none; margin: 5px 0 0 0; padding: 0; background: white; max-height: 200px; overflow-y: auto; display: none; border: 1px solid var(--border-color); font-size: 11px; border-radius: 4px; }
+        #search-suggestions li { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; }
+        #search-suggestions li:hover { background: var(--bg-hover); color: var(--accent); font-weight: 600; }
 
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-panel); z-index: 9999; display: flex; justify-content: center; align-items: center; }
         .login-box { background: var(--bg-base); padding: 40px; border-radius: 8px; width: 300px; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center;}
@@ -54,10 +58,11 @@
         .btn-float .icon { font-size: 14px; }
         .btn-float .label { font-size: 7px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
 
-        #toc-sidebar { position: absolute; top: 120px; left: 15px; width: 340px; max-height: calc(100vh - 190px); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; overflow-y: auto; display: block; }
+        /* PERUBAHAN TOC: DIPANGKAS 2CM (DARI 340PX KE 260PX) */
+        #toc-sidebar { position: absolute; top: 120px; left: 15px; width: 260px; max-height: calc(100vh - 190px); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 1000; overflow-y: auto; display: block; }
         .toc-header { padding: 12px 15px; background: var(--bg-panel); font-weight: 700; border-bottom: 1px solid var(--border-color); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; z-index: 2; }
         .toc-card { margin: 10px; background: var(--bg-base); border: 1px solid var(--border-color); border-radius: 4px; padding: 10px; }
-        .toc-card-title { font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 6px; border-radius: 4px; color: var(--accent); background: #f1f5f9; border: 1px solid #e2e8f0;}
+        .toc-card-title { font-size: 11px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 6px; border-radius: 4px; color: var(--accent); background: #f1f5f9; border: 1px solid #e2e8f0;}
         .toc-card-title:hover { background: #e2e8f0; }
         .toc-controls { display: flex; gap: 4px; margin-bottom: 4px; }
         .btn-toc-action { flex: 1; border: 1px solid var(--border-color); background: var(--bg-panel); color: var(--text-main); padding: 4px 2px; font-size: 9px; font-weight: 600; text-transform: uppercase;}
@@ -65,7 +70,7 @@
         .toc-feature-list { display: none; margin-top: 5px; }
 
         .modal-overlay { display: none; position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-box { background: var(--bg-base); margin: 6% auto; width: 420px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15);}
+        .modal-box { background: var(--bg-base); margin: 6% auto; width: 440px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15);}
         .modal-box-header { padding: 15px; border-bottom: 1px solid var(--border-color); background: var(--bg-panel); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; display: flex; justify-content: space-between;}
         .modal-box-body { padding: 20px; font-size: 12px; max-height: 75vh; overflow-y: auto; }
         .modal-btn { padding: 10px; border: 1px solid var(--border-color); background: var(--bg-panel); font-weight: 600; color: var(--text-main); width: 100%; margin-top: 10px; text-transform: uppercase; font-size: 11px;}
@@ -89,10 +94,13 @@
 
         .drone-group { border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; margin-bottom: 15px; background: var(--bg-panel); }
         .drone-group-title { font-size: 11px; font-weight: 700; margin-top: -24px; background: var(--bg-panel); padding: 0 5px; display: inline-block; color: var(--accent); }
-        .drone-stats { background: #111; color: #10b981; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-top: 10px; border: 1px solid #333;}
+        .drone-stats { background: #111; color: #10b981; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 10px; margin-top: 10px; border: 1px solid #333; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;}
+        .drone-stats div { display: flex; flex-direction: column; }
+        .drone-stats span { color: #888; font-size: 9px; }
+        .drone-stats b { color: #fff; font-size: 11px; }
         .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .input-row label { font-weight: 600; color: var(--text-muted); }
-        .input-row input[type="number"], .input-row input[type="text"] { width: 100px; text-align: right; }
+        .input-row label { font-weight: 600; color: var(--text-muted); font-size: 11px;}
+        .input-row input[type="number"], .input-row input[type="text"], .input-row select { width: 130px; text-align: right; font-size: 11px; padding: 4px; }
         .slider { flex: 1; height: 3px; background: var(--border-color); appearance: none; outline: none; border-radius: 2px;}
         .slider::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer;}
     </style>
@@ -115,7 +123,7 @@
 </div>
 
 <div class="top-bar">
-    Geospatial Data Viewer <span id="userRoleBadge" class="user-badge"></span>
+    WebGIS GeoMapper <span id="userRoleBadge" class="user-badge"></span>
 </div>
 
 <div class="header-controls">
@@ -145,8 +153,11 @@
 <div id="koordinat-panel">Lat: -0.000000 | Lng: 0.000000</div>
 
 <div id="search-panel">
-    <input type="text" id="inputCariWilayah" placeholder="Search Location..." onkeypress="if(event.key === 'Enter') cariWilayah()">
-    <button id="btnCariWilayah" onclick="cariWilayah()">🔍</button>
+    <div class="search-box">
+        <input type="text" id="inputCariWilayah" placeholder="Cari Nama Tempat..." oninput="getSearchRecommendations()">
+        <button id="btnCariWilayah" onclick="cariWilayah()">🔍</button>
+    </div>
+    <ul id="search-suggestions"></ul>
 </div>
 
 <div id="floating-toolbar">
@@ -154,14 +165,27 @@
     <button id="btnLokasi" class="btn-float"><span class="icon">📍</span><span class="label">Locate</span></button>
     <button id="btnLiveSync" class="btn-float"><span class="icon">🔄</span><span class="label" id="lblSync">Sync</span></button>
     <button class="btn-float" onclick="document.getElementById('modalShp').style.display='block'"><span class="icon">📁</span><span class="label">Import</span></button>
+    <button class="btn-float" onclick="bukaModalGNSS()"><span class="icon">🛰️</span><span class="label">GNSS</span></button>
     <button class="btn-float" onclick="inisiasiModeDrone()"><span class="icon" style="color: var(--accent);">✈️</span><span class="label" style="color: var(--accent);">Drone</span></button>
     <button class="btn-float" onclick="bukaModalBatimetri()"><span class="icon" style="color: var(--success);">🌊</span><span class="label" style="color: var(--success);">Survey</span></button>
     <button class="btn-float" onclick="bukaModalExport()"><span class="icon">📤</span><span class="label">Export</span></button>
-    <button id="btn3D" class="btn-float" onclick="toggleGedung3D()"><span class="icon">🏙️</span><span class="label">3D</span></button>
     <button id="btnRouteToggle" class="btn-float"><span class="icon">🏁</span><span class="label">Rute</span></button>
     <button id="btnDistanceToggle" class="btn-float"><span class="icon">📏</span><span class="label">Jarak</span></button>
     <button class="btn-float admin-only" onclick="bukaModalOnline()"><span class="icon">👥</span><span class="label">Users</span></button>
     <button id="btnHapusShp" class="btn-float"><span class="icon" style="color: var(--danger);">🗑️</span><span class="label" style="color: var(--danger);">Hapus</span></button>
+</div>
+
+<div id="modalGNSS" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-box-header"><span>🛰️ GNSS EarthScope Downloader</span><span onclick="document.getElementById('modalGNSS').style.display='none'" style="cursor:pointer">&times;</span></div>
+        <div class="modal-box-body">
+            <div class="input-row"><label>Station ID (Bako/Ntus/dll)</label><input type="text" id="gnssStation" value="BAKO" class="modal-input"></div>
+            <div class="input-row"><label>Tahun Mulai (YYYY)</label><input type="number" id="gnssStart" value="2015" class="modal-input"></div>
+            <div class="input-row"><label>Tahun Selesai (YYYY)</label><input type="number" id="gnssEnd" value="2025" class="modal-input"></div>
+            <p style="font-size:10px; color:var(--text-muted); margin-bottom:15px;">*Data akan diekstrak menggunakan script Python Automation ke database.</p>
+            <button class="modal-btn" style="background: var(--accent); color: white;" onclick="alert('Permintaan Download GNSS API EarthScope untuk Station '+document.getElementById('gnssStation').value+' ('+document.getElementById('gnssStart').value+'-'+document.getElementById('gnssEnd').value+') telah dikirim ke backend Python.')">START DOWNLOAD</button>
+        </div>
+    </div>
 </div>
 
 <div id="toc-sidebar">
@@ -176,25 +200,51 @@
 </div>
 
 <div id="modalDronePlanner" class="modal-overlay">
-    <div class="modal-box" style="margin: 3% auto;">
-        <div class="modal-box-header"><span>✈️ Parameter Misi Terbang (Live)</span><span onclick="batalMisiDrone()" style="cursor:pointer; font-size:16px;">&times;</span></div>
+    <div class="modal-box" style="margin: 3% auto; width:480px;">
+        <div class="modal-box-header"><span>✈️ Drone Flight Planner (Live Edit)</span><span onclick="batalMisiDrone()" style="cursor:pointer; font-size:16px;">&times;</span></div>
         <div class="modal-box-body">
-            <div class="input-row"><label>Nama Rute / Misi</label><input type="text" id="droneNama" value="Misi_Mapping_01" oninput="updateLivePreview()"></div>
+            <div class="input-row"><label>Nama Rute / Misi</label><input type="text" id="droneNama" value="Misi_Mapping_01" oninput="updateDronePreview()"></div>
+            
             <div class="drone-group" style="margin-top:20px;">
-                <span class="drone-group-title">Kamera & Grid</span>
-                <div class="input-row"><label>Jarak Jalur / Spacing (m)</label><input type="number" id="droneSpacing" value="30" min="5" step="5" onchange="updateLivePreview()"></div>
-                <div class="input-row"><label>Margin / Overshoot (m)</label><input type="number" id="droneMargin" value="10" min="0" step="1" onchange="updateLivePreview()"></div>
-                <label style="font-weight: 600; color: var(--text-muted); display: block; margin-top: 10px;">Sudut Hatching (<span id="lblAngle">0</span>°)</label>
-                <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="updateLivePreview()">
+                <span class="drone-group-title">Hardware & Parameter</span>
+                <div class="input-row">
+                    <label>Kamera / Sensor</label>
+                    <select id="droneCamera" onchange="updateDronePreview()">
+                        <option value="phantom4rtk">DJI Phantom 4 RTK</option>
+                        <option value="mavic3e">DJI Mavic 3 Enterprise</option>
+                    </select>
+                </div>
+                <div class="input-row"><label>Ketinggian Terbang (m)</label><input type="number" id="droneAlt" value="100" min="10" oninput="updateDronePreview()"></div>
+                <div class="input-row"><label>Kecepatan Drone (m/s)</label><input type="number" id="droneSpeed" value="10" min="1" max="20" oninput="updateDronePreview()"></div>
             </div>
+
             <div class="drone-group">
-                <span class="drone-group-title">Parameter Terbang</span>
-                <div class="input-row"><label>Ketinggian Terbang (m)</label><input type="number" id="droneAlt" value="100" min="10" onchange="updateLivePreview()"></div>
-                <div class="input-row"><label>Kecepatan (m/s)</label><input type="number" id="droneSpeed" value="10" min="1" max="20" onchange="updateLivePreview()"></div>
+                <span class="drone-group-title">Grid & Sapuan</span>
+                <div class="input-row"><label>Front Overlap (%)</label><input type="number" id="droneOverlap" value="80" min="10" max="95" oninput="updateDronePreview()"></div>
+                <div class="input-row"><label>Side Overlap / Sidelap (%)</label><input type="number" id="droneSidelap" value="70" min="10" max="95" oninput="updateDronePreview()"></div>
+                <div class="input-row"><label>Margin Keluar (m)</label><input type="number" id="droneMargin" value="10" min="0" oninput="updateDronePreview()"></div>
+                <label style="font-weight: 600; color: var(--text-muted); display: block; margin-top: 10px; font-size:11px;">Sudut Hatching (<span id="lblAngle">0</span>°)</label>
+                <input type="range" id="droneAngle" class="slider" min="0" max="360" value="0" style="width: 100%; margin-top: 5px; height: 4px;" oninput="updateDronePreview()">
             </div>
-            <div class="drone-stats" id="droneStats">-- Gambar area di peta untuk melihat statistik --</div>
+
+            <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk mengubah rute ini secara Live!</p>
+
+            <div class="drone-stats" id="droneStats">
+                <div><span>Area:</span><b id="s_area">-</b></div>
+                <div><span>Pictures:</span><b id="s_pic">-</b></div>
+                <div><span>Flight Time:</span><b id="s_time">-</b></div>
+                <div><span>Distance:</span><b id="s_dist">-</b></div>
+                <div><span>No of Strips:</span><b id="s_strip">-</b></div>
+                <div><span>Photo every:</span><b id="s_photo_every">-</b></div>
+                <div><span>Dist between images:</span><b id="s_dist_img">-</b></div>
+                <div><span>Footprint:</span><b id="s_footprint">-</b></div>
+                <div><span>Ground Resolution:</span><b id="s_gsd">-</b></div>
+                <div><span>Dist between lines:</span><b id="s_dist_line">-</b></div>
+            </div>
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="modal-btn" style="margin-top:0; border-color: var(--danger); color: var(--danger);" onclick="batalMisiDrone()">BATAL</button><button class="modal-btn" style="margin-top:0; background: var(--accent); color: white;" onclick="simpanMisiDrone()">SIMPAN MISI</button>
+                <button class="modal-btn" style="margin-top:0; border-color: var(--danger); color: var(--danger);" onclick="batalMisiDrone()">BATAL / HAPUS</button>
+                <button class="modal-btn" style="margin-top:0; background: var(--accent); color: white;" onclick="simpanMisiDrone()">SIMPAN MISI</button>
             </div>
         </div>
     </div>
@@ -205,46 +255,40 @@
         <div class="modal-box-header"><span>🌊 Generator Survey / Batimetri</span><span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span></div>
         <div class="modal-box-body">
             <div id="batiBaruSection">
-                <label>Nama Layer Rute:</label><input type="text" id="batiNama" class="modal-input" value="Survey_Batimetri_1">
+                <label>Nama Layer Rute:</label><input type="text" id="batiNama" class="modal-input" value="Survey_Batimetri_1" oninput="updateBatiPreview()">
                 
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-top: 10px; margin-bottom: 10px;">
                     <label style="color: var(--text-main); font-weight: 700;">GAYA LINTASAN / JALUR</label>
-                    <label style="margin-top: 8px; display: block;">Lengkungan Belokan (<span id="lblBatiCurve">100</span>%):</label>
-                    <input type="range" id="batiCurve" class="slider" min="0" max="100" value="100" style="width: 100%; margin-top: 5px; margin-bottom: 8px;" oninput="document.getElementById('lblBatiCurve').innerText=this.value">
+                    <label style="margin-top: 8px; display: block; font-size:11px; font-weight:600;">Lengkungan Belokan (<span id="lblBatiCurve">100</span>%):</label>
+                    <input type="range" id="batiCurve" class="slider" min="0" max="100" value="100" style="width: 100%; margin-top: 5px; margin-bottom: 8px;" oninput="document.getElementById('lblBatiCurve').innerText=this.value; updateBatiPreview();">
                     <p style="font-size:9px; color:var(--text-muted); margin:0;">*0% = Sudut Tajam (Kotak) | 100% = U-Turn Penuh (Mulus).</p>
                 </div>
                 
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
                     <label style="color: var(--text-main); font-weight: 700;">LAJUR UTAMA</label>
-                    <label style="margin-top: 8px; display: block;">Interval (m):</label>
-                    <input type="number" id="batiInterval" class="modal-input" value="50" min="1">
-                    
-                    <label style="margin-top: 8px; display: block;">Arah Sapuan & Acuan Start:</label>
-                    <select id="batiMainOrient" class="modal-input">
-                        <option value="longest|inward" selected>★ Otomatis (Sejajar Sisi Terpanjang)</option>
-                        <option value="horizontal|top-down">Manual: Horizontal (Atas -> Bawah)</option>
-                        <option value="horizontal|bottom-up">Manual: Horizontal (Bawah -> Atas)</option>
-                        <option value="vertical|left-right">Manual: Vertikal (Kiri -> Kanan)</option>
-                        <option value="vertical|right-left">Manual: Vertikal (Kanan -> Kiri)</option>
-                    </select>
+                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiInterval" value="50" min="1" oninput="updateBatiPreview()"></div>
+                    <div class="input-row"><label>Acuan Start:</label>
+                    <select id="batiMainOrient" onchange="updateBatiPreview()">
+                        <option value="longest|inward" selected>★ Otomatis Sisi Terpanjang</option>
+                        <option value="horizontal|top-down">Manual: Horizontal (Atas-Bawah)</option>
+                        <option value="horizontal|bottom-up">Manual: Horizontal (Bawah-Atas)</option>
+                        <option value="vertical|left-right">Manual: Vertikal (Kiri-Kanan)</option>
+                        <option value="vertical|right-left">Manual: Vertikal (Kanan-Kiri)</option>
+                    </select></div>
                 </div>
                 
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
                     <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS (Tegak Lurus)</label>
-                    <label style="margin-top: 8px; display: block;">Interval (m):</label>
-                    <input type="number" id="batiCrossInterval" class="modal-input" value="150" min="0">
-                    <p style="font-size:9px; color:var(--text-muted); margin-top:5px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah (Tanpa Jalur Tegak Lurus).</p>
+                    <div class="input-row"><label>Interval (m):</label><input type="number" id="batiCrossInterval" value="150" min="0" oninput="updateBatiPreview()"></div>
+                    <p style="font-size:9px; color:var(--text-muted); margin-top:0px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah.</p>
                 </div>
+
+                <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk merubah jalur secara Live!</p>
                 
-                <button class="modal-btn" style="background: var(--success); color: white;" onclick="mulaiGambarBatimetri()">GAMBAR AREA BARU</button>
-            </div>
-            
-            <div id="batiEditSection" style="display: none; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
-                <p style="font-weight:700; margin-top:0;">Edit Tanpa Gambar Ulang</p>
-                <label>Lengkungan BARU (%):</label><input type="range" id="editBatiCurve" class="slider" min="0" max="100" style="width:100%; margin-bottom:10px;">
-                <label>Interval Utama BARU (m):</label><input type="number" id="editBatiInterval" class="modal-input" min="1">
-                <label>Interval Lintas BARU (m):</label><input type="number" id="editBatiCrossInterval" class="modal-input" min="0">
-                <button class="modal-btn" style="background: var(--warning); color: white; border-color: var(--warning);" onclick="prosesEditBatimetri()">UPDATE LAJUR</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="modal-btn" style="border-color: var(--danger); color: var(--danger);" onclick="batalMisiBatimetri()">BATAL</button>
+                    <button class="modal-btn" style="background: var(--success); color: white;" onclick="simpanMisiBatimetri()">SIMPAN RUTE SURVEY</button>
+                </div>
             </div>
         </div>
     </div>
@@ -331,7 +375,6 @@
 <script src="https://unpkg.com/@tmcw/togeojson@4.2.0/dist/togeojson.umd.js"></script>
 <script src="https://unpkg.com/tokml@0.4.0/tokml.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
-<script src="https://cdn.osmbuildings.org/classic/0.2.2b/OSMBuildings-Leaflet.js"></script>
 
 <script>
     let currentUser = null; let currentLoginType = 'user'; let heartbeatInterval, onlinePollingInterval;
@@ -367,11 +410,29 @@
     function toggleTOCList(listId, el) { var list = document.getElementById(listId); if(list.style.display === 'block') { list.style.display = 'none'; el.innerHTML = el.innerHTML.replace('▼', '▶').replace('(Tutup)', '(Buka)'); } else { list.style.display = 'block'; el.innerHTML = el.innerHTML.replace('▶', '▼').replace('(Buka)', '(Tutup)'); } }
     function toggleTabelVis(nama, btn) { var lyr = layersData[nama]; if (map.hasLayer(lyr)) { map.removeLayer(lyr); btn.innerHTML = "Show"; } else { map.addLayer(lyr); btn.innerHTML = "Hide"; } }
 
-    function cariWilayah() {
-        const query = document.getElementById('inputCariWilayah').value; if (!query) return; const btn = document.getElementById('btnCariWilayah'); btn.innerHTML = '⏳';
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => { btn.innerHTML = '🔍'; if (data && data.length > 0) { const bbox = data[0].boundingbox; if (bbox) map.flyToBounds([ [bbox[0], bbox[2]], [bbox[1], bbox[3]] ]); else map.flyTo([data[0].lat, data[0].lon], 13); } else { alert('Wilayah tidak ditemukan!'); } }).catch(() => { btn.innerHTML = '🔍'; alert('Gagal mencari wilayah!'); });
+    // --- SEARCH AUTOCOMPLETE ---
+    let searchTimeout;
+    function getSearchRecommendations() {
+        clearTimeout(searchTimeout); const query = document.getElementById('inputCariWilayah').value; const suggList = document.getElementById('search-suggestions');
+        if(query.length < 3) { suggList.style.display = 'none'; return; }
+        searchTimeout = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => {
+                suggList.innerHTML = '';
+                if(data.length > 0) {
+                    data.forEach(item => {
+                        let li = document.createElement('li'); li.innerText = item.display_name;
+                        li.onclick = () => { map.flyToBounds([[item.boundingbox[0], item.boundingbox[2]], [item.boundingbox[1], item.boundingbox[3]]]); suggList.style.display = 'none'; document.getElementById('inputCariWilayah').value = item.display_name; };
+                        suggList.appendChild(li);
+                    });
+                    suggList.style.display = 'block';
+                } else { suggList.style.display = 'none'; }
+            });
+        }, 500);
     }
+    function cariWilayah() { const query = document.getElementById('inputCariWilayah').value; if (!query) return; const btn = document.getElementById('btnCariWilayah'); btn.innerHTML = '⏳'; fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`).then(res => res.json()).then(data => { btn.innerHTML = '🔍'; if (data && data.length > 0) { const bbox = data[0].boundingbox; if (bbox) map.flyToBounds([ [bbox[0], bbox[2]], [bbox[1], bbox[3]] ]); else map.flyTo([data[0].lat, data[0].lon], 13); document.getElementById('search-suggestions').style.display = 'none'; } else { alert('Wilayah tidak ditemukan!'); } }).catch(() => { btn.innerHTML = '🔍'; alert('Gagal mencari wilayah!'); }); }
 
+    function bukaModalGNSS() { document.getElementById('modalGNSS').style.display='block'; }
+    
     function switchLogin(type) { currentLoginType = type; document.getElementById('tabUser').classList.remove('active'); document.getElementById('tabAdmin').classList.remove('active'); document.getElementById('logError').style.display = 'none'; if (type === 'admin') { document.getElementById('tabAdmin').classList.add('active'); document.getElementById('loginHint').style.display = 'none'; } else { document.getElementById('tabUser').classList.add('active'); document.getElementById('loginHint').style.display = 'block'; } }
     function prosesLogin() { const user = document.getElementById('logUsername').value; const pass = document.getElementById('logPassword').value; const btn = document.querySelector('.login-btn'); const err = document.getElementById('logError'); if(!user || !pass) return; btn.innerHTML = "Processing..."; fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password: pass, type: currentLoginType }) }).then(res => res.json()).then(data => { if(data.status === 'Success') { currentUser = data.data; document.getElementById('login-overlay').style.display = 'none'; const badge = document.getElementById('userRoleBadge'); badge.style.display = 'inline-block'; badge.innerHTML = `[ ${currentUser.username.toUpperCase()} | ${currentUser.role.toUpperCase()} ]`; aturHakAkses(); refreshSemuaData(); mulaiHeartbeat(); } else { err.style.display = 'block'; err.innerText = data.error; btn.innerHTML = "MASUK"; } }).catch(() => { err.style.display = 'block'; err.innerText = "Koneksi server gagal!"; btn.innerHTML = "MASUK"; }); }
     function aturHakAkses() { const adminElements = document.querySelectorAll('.admin-only'); if (currentUser.role !== 'admin') adminElements.forEach(el => el.style.display = 'none'); else adminElements.forEach(el => el.style.display = 'flex'); }
@@ -391,34 +452,14 @@
         layersData.shp_garis.clearLayers(); muatDataPeta('shp_garis', layersData.shp_garis, defaultColors['shp_garis']);
         layersData.shp_titik.clearLayers(); muatDataPeta('shp_titik', layersData.shp_titik, defaultColors['shp_titik']);
     }
-    
-    document.getElementById('btnLiveSync').onclick = function() {
-        isLiveSync = !isLiveSync; let lbl = document.getElementById('lblSync');
-        if(isLiveSync) { lbl.style.color = "var(--accent)"; refreshSemuaData(); syncInterval = setInterval(refreshSemuaData, 5000); } else { lbl.style.color = "var(--text-muted)"; clearInterval(syncInterval); }
-    };
+    document.getElementById('btnLiveSync').onclick = function() { isLiveSync = !isLiveSync; let lbl = document.getElementById('lblSync'); if(isLiveSync) { lbl.style.color = "var(--accent)"; refreshSemuaData(); syncInterval = setInterval(refreshSemuaData, 5000); } else { lbl.style.color = "var(--text-muted)"; clearInterval(syncInterval); } };
 
     var isLokasiAktif = false, circleLokasi, markerLokasi;
-    document.getElementById('btnLokasi').onclick = function() {
-        if (!isLokasiAktif) { this.style.background = "var(--bg-hover)"; map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true }); isLokasiAktif = true; } else { map.stopLocate(); if(circleLokasi) map.removeLayer(circleLokasi); if(markerLokasi) map.removeLayer(markerLokasi); this.style.background = "rgba(255, 255, 255, 0.9)"; isLokasiAktif = false; }
-    };
-    map.on('locationfound', function(e) {
-        if(circleLokasi) map.removeLayer(circleLokasi); if(markerLokasi) map.removeLayer(markerLokasi);
-        circleLokasi = L.circle(e.latlng, e.accuracy, { color: '#2563eb', fillOpacity: 0.2 }).addTo(map); markerLokasi = L.marker(e.latlng).addTo(map).bindPopup("Lokasi Anda").openPopup();
-    });
+    document.getElementById('btnLokasi').onclick = function() { if (!isLokasiAktif) { this.style.background = "var(--bg-hover)"; map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true }); isLokasiAktif = true; } else { map.stopLocate(); if(circleLokasi) map.removeLayer(circleLokasi); if(markerLokasi) map.removeLayer(markerLokasi); this.style.background = "rgba(255, 255, 255, 0.9)"; isLokasiAktif = false; } };
+    map.on('locationfound', function(e) { if(circleLokasi) map.removeLayer(circleLokasi); if(markerLokasi) map.removeLayer(markerLokasi); circleLokasi = L.circle(e.latlng, e.accuracy, { color: '#2563eb', fillOpacity: 0.2 }).addTo(map); markerLokasi = L.marker(e.latlng).addTo(map).bindPopup("Lokasi Anda").openPopup(); });
 
-    function gantiWarnaManual(tabel, id, newColor) {
-        let pkKolom = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel;
-        let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || '{"color": "${newColor}"}'::jsonb WHERE ${pkKolom} = '${id}'`;
-        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) }).then(() => { layersData[tabel].eachLayer(layerGroup => { if(layerGroup.featureId == id) { layerGroup.eachLayer(layer => { if(layer.setStyle) layer.setStyle({color: newColor, fillColor: newColor}); }); } }); });
-    }
-
-    function autoColorGroup(tabel, groupName) {
-        let col = tabel.startsWith('shp_') ? 'nama_layer' : (tabel==='jalan'?'nama_jalan':(tabel==='landuse'?'penggunaan':(tabel==='wilayah'?'nama_kabupaten':'id_provider')));
-        let safeName = groupName.replace(/'/g, "''");
-        let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || jsonb_build_object('color', (ARRAY['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000', '#ff00ff', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ffa500', '#8a2be2', '#7fff00'])[floor(random() * 30 + 1)::int]) WHERE ${col} = '${safeName}'`;
-        fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) }).then(() => refreshSemuaData());
-    }
-
+    function gantiWarnaManual(tabel, id, newColor) { let pkKolom = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel; let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || '{"color": "${newColor}"}'::jsonb WHERE ${pkKolom} = '${id}'`; fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) }).then(() => { layersData[tabel].eachLayer(layerGroup => { if(layerGroup.featureId == id) { layerGroup.eachLayer(layer => { if(layer.setStyle) layer.setStyle({color: newColor, fillColor: newColor}); }); } }); }); }
+    function autoColorGroup(tabel, groupName) { let col = tabel.startsWith('shp_') ? 'nama_layer' : (tabel==='jalan'?'nama_jalan':(tabel==='landuse'?'penggunaan':(tabel==='wilayah'?'nama_kabupaten':'id_provider'))); let safeName = groupName.replace(/'/g, "''"); let queryUpdate = `UPDATE ${tabel} SET properties = COALESCE(properties, '{}'::jsonb) || jsonb_build_object('color', (ARRAY['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000', '#ff00ff', '#00ff00', '#0000ff', '#ffff00', '#00ffff', '#ffa500', '#8a2be2', '#7fff00'])[floor(random() * 30 + 1)::int]) WHERE ${col} = '${safeName}'`; fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: queryUpdate }) }).then(() => refreshSemuaData()); }
     function toggleGroupVis(tabel, groupName) { layersData[tabel].eachLayer(l => { if(l.groupName === groupName) { if(map.hasLayer(l)) map.removeLayer(l); else map.addLayer(l); } }); }
     function zoomKeGroup(tabel, groupName) { var b = L.latLngBounds(); layersData[tabel].eachLayer(l => { if (l.groupName === groupName) { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); } }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
@@ -442,13 +483,13 @@
                         let attrName = props.NAMOBJ || props.WADMKD || props.DESA || props.KELURAHAN || props.WADMKC || props.KECAMATAN || props.NAMA || props.NAME || props.Name || props.nama || props.KABUPATEN;
                         let featureDisplayName = attrName ? attrName : `Data ID: ${featureId}`;
                         if(!groupedFeatures[baseName]) groupedFeatures[baseName] = '';
-                        groupedFeatures[baseName] += `<div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #cbd5e1; padding-left:4px;"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;" title="${featureDisplayName}">📍 ${featureDisplayName}</span><input type="color" value="${itemColor}" onchange="gantiWarnaManual('${tabel}', '${featureId}', this.value)" style="padding:0; border:1px solid #cbd5e1; width:24px; height:24px; cursor:pointer; border-radius:4px;"></div>`;
+                        groupedFeatures[baseName] += `<div style="display:flex; align-items:center; justify-content:space-between; font-size:10px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px dashed #cbd5e1; padding-left:4px;"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;" title="${featureDisplayName}">📍 ${featureDisplayName}</span><input type="color" value="${itemColor}" onchange="gantiWarnaManual('${tabel}', '${featureId}', this.value)" style="padding:0; border:1px solid #cbd5e1; width:24px; height:24px; cursor:pointer; border-radius:4px;"></div>`;
                     } 
                 }); 
                 let finalHtml = '';
                 for(let gName in groupedFeatures) {
                     let safeGroupId = `group-${tabel}-${gName.replace(/[^a-zA-Z0-9]/g, '')}`; let safeStrName = gName.replace(/'/g, "\\'");
-                    finalHtml += `<div style="margin-top: 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #ffffff; overflow:hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);"><div style="font-size: 11px; font-weight: 700; padding: 8px; background: #e2e8f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom:1px solid #cbd5e1; color: var(--text-main);" onclick="toggleTOCList('${safeGroupId}', this)"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">📁 File: ${gName}</span><span style="font-size:9px; color:var(--text-muted);">(Buka)</span></div><div style="display:flex; gap:4px; padding:6px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;"><button class="btn-toc-action" onclick="toggleGroupVis('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">👁️ Hide</button><button class="btn-toc-action" onclick="zoomKeGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">🎯 Zoom</button><button class="btn-toc-action" onclick="autoColorGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px; background:var(--accent); color:#fff; border:none; font-weight:bold;">🎨 Auto Color</button></div><div id="${safeGroupId}" style="display: none; max-height: 250px; overflow-y: auto; padding: 6px; background:#fff;">${groupedFeatures[gName]}</div></div>`;
+                    finalHtml += `<div style="margin-top: 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #ffffff; overflow:hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);"><div style="font-size: 11px; font-weight: 700; padding: 8px; background: #e2e8f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom:1px solid #cbd5e1; color: var(--text-main);" onclick="toggleTOCList('${safeGroupId}', this)"><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;">📁 File: ${gName}</span><span style="font-size:9px; color:var(--text-muted);">(Buka)</span></div><div style="display:flex; gap:4px; padding:6px; background: #f1f5f9; border-bottom: 1px solid #cbd5e1;"><button class="btn-toc-action" onclick="toggleGroupVis('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">👁️ Hide</button><button class="btn-toc-action" onclick="zoomKeGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px;">🎯 Zoom</button><button class="btn-toc-action" onclick="autoColorGroup('${tabel}', '${safeStrName}')" style="font-size:9px; padding:4px; background:var(--accent); color:#fff; border:none; font-weight:bold;">🎨 Auto Color</button></div><div id="${safeGroupId}" style="display: none; max-height: 250px; overflow-y: auto; padding: 6px; background:#fff;">${groupedFeatures[gName]}</div></div>`;
                 }
                 if(listContainer) listContainer.innerHTML = finalHtml;
             } 
@@ -457,138 +498,194 @@
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
+    // --- ALGORITMA DRONE PLANNER BARU (KALKULASI GSD & FOTOGRAMETRI LENGKAP) ---
     var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
-    function inisiasiModeDrone() { alert("Silakan gambar area poligon di peta untuk batas terbang Drone."); isDrawingDroneMode = true; map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#f59e0b', dashArray: '5,5' }, pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 } }); }
-    function updateLivePreview() { tempDroneLayer.clearLayers(); if(!currentDronePolygon) return; var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 }; document.getElementById('lblAngle').innerText = config.angle; var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config); if(features.length > 0) { var f = features[0]; L.geoJSON(f, { style: { color: '#10b981', weight: 2 } }).addTo(tempDroneLayer); var coords = f.geometry.coordinates; if(coords.length > 0) { L.circleMarker([coords[0][1], coords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); L.circleMarker([coords[coords.length-1][1], coords[coords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); } document.getElementById('droneStats').innerHTML = `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Total Jarak:</span> <b style="color:#fff;">${f.properties.total_jarak_km} km</b></div><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>Est. Waktu:</span> <b style="color:#fff;">${f.properties.estimasi_waktu_menit} Menit</b></div><div style="display:flex; justify-content:space-between;"><span>Jalur (Waypoints):</span> <b style="color:#fff;">${coords.length} Titik</b></div>`; } else { document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; } }
-    function algoritmaJalurDrone(polyData, config) { try { var spacing = config.spacing, angle = config.angle, margin = config.margin; var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid}); var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3]; var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'}); var numLines = Math.floor(distY / spacing) + 1; for(let i=0; i<=numLines; i++) { var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1]; var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'}); var pt2 = turf.destination(turf.point([maxX, currentY]), margin + 100, 90, {units: 'meters'}); lines.push(turf.lineString([pt1.geometry.coordinates, pt2.geometry.coordinates])); } var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid})), continuousCoords = [], flip = false; rotatedLines.forEach(line => { var split; try { split = turf.lineSplit(line, polyData); } catch(e){} var segments = []; if(split && split.features.length > 0) { split.features.forEach(seg => { if(turf.booleanPointInPolygon(turf.along(seg, turf.length(seg)/2), polyData)) segments.push(seg); }); } else { if(turf.booleanPointInPolygon(turf.along(line, turf.length(line)/2), polyData)) segments.push(line); } if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var bestSeg = segments[0]; if (margin > 0) { var c = bestSeg.geometry.coordinates; if (turf.length(bestSeg, {units: 'meters'}) > 0) { var p1 = turf.point(c[0]), p2 = turf.point(c[c.length-1]), bearing = turf.bearing(p1, p2); var extP1 = turf.destination(p1, margin, bearing - 180, {units: 'meters'}).geometry.coordinates; var extP2 = turf.destination(p2, margin, bearing, {units: 'meters'}).geometry.coordinates; bestSeg = turf.lineString([extP1, ...c.slice(1, -1), extP2]); } } var finalCoords = bestSeg.geometry.coordinates; if(flip) finalCoords.reverse(); continuousCoords.push(...finalCoords); flip = !flip; } }); if(continuousCoords.length > 1) { var flightPath = turf.lineString(continuousCoords), distanceKm = turf.length(flightPath, {units: 'kilometers'}), timeMin = (distanceKm * 1000) / config.speed / 60; flightPath.properties = { nama_layer: config.nama, jarak_antar_jalur_m: spacing, margin_m: margin, sudut_deg: angle, altitude_m: config.altitude, speed_ms: config.speed, total_jarak_km: distanceKm.toFixed(2), estimasi_waktu_menit: timeMin.toFixed(1) }; return [flightPath]; } return []; } catch(e) { return []; } }
-    function simpanMisiDrone() { if(!currentDronePolygon) return; var config = { nama: document.getElementById('droneNama').value || "Misi_Drone", spacing: parseFloat(document.getElementById('droneSpacing').value) || 30, angle: parseFloat(document.getElementById('droneAngle').value) || 0, margin: parseFloat(document.getElementById('droneMargin').value) || 0, altitude: parseFloat(document.getElementById('droneAlt').value) || 100, speed: parseFloat(document.getElementById('droneSpeed').value) || 10 }; var features = algoritmaJalurDrone(currentDronePolygon.toGeoJSON(), config); if(features.length === 0) return alert("Gagal menyimpan rute! Pastikan area memadai."); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: config.nama, pengupload: currentUser.username, features: features, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan ke Tabel SHP Garis!"); batalMisiDrone(); refreshSemuaData(); }); }
-    function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
+    var droneCameras = {
+        'phantom4rtk': { focal: 8.8, sw: 13.2, sh: 8.8, iw: 5472, ih: 3648 },
+        'mavic3e': { focal: 12, sw: 17.3, sh: 13.0, iw: 5280, ih: 3956 }
+    };
 
-    // --- PEMBARUAN: ALGORITMA BATIMETRI FIX 100% ---
-    var isDrawingBatimetri = false, lastBatiPolyGeoJSON = null, lastBatiConfig = null, batiConfig = { nama: "", interval: 50, crossInterval: 0, curve: 100, mainOrient: "longest|inward" };
+    function inisiasiModeDrone() { alert("Silakan gambar area poligon di peta untuk batas terbang Drone."); isDrawingDroneMode = true; map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#f59e0b', dashArray: '5,5' }, pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 } }); }
     
-    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; if (lastBatiPolyGeoJSON) { document.getElementById('batiEditSection').style.display = 'block'; document.getElementById('editBatiInterval').value = lastBatiConfig.interval; document.getElementById('editBatiCrossInterval').value = lastBatiConfig.crossInterval; document.getElementById('editBatiCurve').value = lastBatiConfig.curve; } }
-    
-    function mulaiGambarBatimetri() { 
-        batiConfig.nama = document.getElementById('batiNama').value; batiConfig.interval = parseFloat(document.getElementById('batiInterval').value); batiConfig.crossInterval = parseFloat(document.getElementById('batiCrossInterval').value); batiConfig.curve = parseFloat(document.getElementById('batiCurve').value); batiConfig.mainOrient = document.getElementById('batiMainOrient').value; 
-        if(!batiConfig.nama || !batiConfig.interval) return alert("Lengkapi form Nama Layer dan Interval!"); 
-        document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); 
+    function updateDronePreview() { 
+        tempDroneLayer.clearLayers(); if(!currentDronePolygon) return; 
+        
+        var cam = droneCameras[document.getElementById('droneCamera').value];
+        var alt = parseFloat(document.getElementById('droneAlt').value) || 100;
+        var overlap = parseFloat(document.getElementById('droneOverlap').value) || 80;
+        var sidelap = parseFloat(document.getElementById('droneSidelap').value) || 70;
+        var speed = parseFloat(document.getElementById('droneSpeed').value) || 10;
+        var margin = parseFloat(document.getElementById('droneMargin').value) || 0;
+        var angle = parseFloat(document.getElementById('droneAngle').value) || 0;
+        document.getElementById('lblAngle').innerText = angle;
+
+        // Fotogrametri Math
+        var gsd = (alt * 100 * cam.sw) / (cam.focal * cam.iw); // cm/px
+        var footW = (alt * cam.sw) / cam.focal; // meter (Berdasarkan lebar sensor)
+        var footH = (alt * cam.sh) / cam.focal; // meter
+        var spacing = footW * (1 - (sidelap/100)); 
+        var triggerDist = footH * (1 - (overlap/100)); 
+
+        var config = { spacing: spacing, angle: angle, margin: margin };
+        
+        // Membangun Rute (seperti batimetri tapi dengan parameter drone)
+        var polyData = currentDronePolygon.toGeoJSON();
+        var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid}); 
+        var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3]; 
+        var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'}); 
+        var numLines = Math.floor(distY / spacing) + 1; 
+        for(let i=0; i<=numLines; i++) { 
+            var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1]; 
+            var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'}); 
+            var pt2 = turf.destination(turf.point([maxX, currentY]), margin + 100, 90, {units: 'meters'}); 
+            lines.push(turf.lineString([pt1.geometry.coordinates, pt2.geometry.coordinates])); 
+        } 
+        
+        var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid})), continuousCoords = [], flip = false; 
+        rotatedLines.forEach(line => { 
+            var split; try { split = turf.lineSplit(line, polyData); } catch(e){} var segments = []; 
+            if(split && split.features.length > 0) { split.features.forEach(seg => { if(turf.booleanPointInPolygon(turf.along(seg, turf.length(seg)/2), polyData)) segments.push(seg); }); } 
+            else { if(turf.booleanPointInPolygon(turf.along(line, turf.length(line)/2), polyData)) segments.push(line); } 
+            
+            if(segments.length > 0) { 
+                segments.sort((a,b) => turf.length(b) - turf.length(a)); var bestSeg = segments[0]; 
+                if (margin > 0) { 
+                    var c = bestSeg.geometry.coordinates; 
+                    if (turf.length(bestSeg, {units: 'meters'}) > 0) { 
+                        var p1 = turf.point(c[0]), p2 = turf.point(c[c.length-1]), bearing = turf.bearing(p1, p2); 
+                        var extP1 = turf.destination(p1, margin, bearing - 180, {units: 'meters'}).geometry.coordinates; 
+                        var extP2 = turf.destination(p2, margin, bearing, {units: 'meters'}).geometry.coordinates; 
+                        bestSeg = turf.lineString([extP1, ...c.slice(1, -1), extP2]); 
+                    } 
+                } 
+                var finalCoords = bestSeg.geometry.coordinates; if(flip) finalCoords.reverse(); continuousCoords.push(...finalCoords); flip = !flip; 
+            } 
+        }); 
+
+        if(continuousCoords.length > 1) { 
+            var flightPath = turf.lineString(continuousCoords);
+            var distanceMeters = turf.length(flightPath, {units: 'meters'});
+            var timeSec = distanceMeters / speed;
+            var numPics = Math.ceil(distanceMeters / triggerDist);
+            var areaM2 = turf.area(polyData);
+            
+            L.geoJSON(flightPath, { style: { color: '#10b981', weight: 2 } }).addTo(tempDroneLayer); 
+            L.circleMarker([continuousCoords[0][1], continuousCoords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
+            L.circleMarker([continuousCoords[continuousCoords.length-1][1], continuousCoords[continuousCoords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
+            
+            document.getElementById('s_area').innerText = Math.round(areaM2) + " m²";
+            document.getElementById('s_pic').innerText = numPics + " Foto";
+            document.getElementById('s_time').innerText = Math.floor(timeSec/60) + ":" + Math.round(timeSec%60).toString().padStart(2, '0') + " Menit";
+            document.getElementById('s_dist').innerText = (distanceMeters/1000).toFixed(2) + " km";
+            document.getElementById('s_strip').innerText = Math.round(numLines);
+            document.getElementById('s_photo_every').innerText = (triggerDist / speed).toFixed(1) + " Detik";
+            document.getElementById('s_dist_img').innerText = triggerDist.toFixed(1) + " m";
+            document.getElementById('s_footprint').innerText = footW.toFixed(1) + " x " + footH.toFixed(1) + " m";
+            document.getElementById('s_gsd').innerText = gsd.toFixed(2) + " cm/px";
+            document.getElementById('s_dist_line').innerText = spacing.toFixed(1) + " m";
+            
+            // Simpan path sementara untuk disave
+            flightPath.properties = { nama_layer: document.getElementById('droneNama').value, gsd: gsd.toFixed(2), overlap: overlap, sidelap: sidelap, altitude_m: alt, speed_ms: speed, total_jarak_km: (distanceMeters/1000).toFixed(2), foto: numPics };
+            tempDroneLayer.currentPath = flightPath;
+        } else { 
+            document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; 
+        } 
     }
     
-    function generateBatimetriFeatures(polyData, config) {
-        var centroid = turf.centroid(polyData);
-        function getLongestEdgeAngle(poly) { 
-            var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; 
-            for(var i=0; i<coords.length-1; i++) { 
-                var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); 
-                if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } 
-            } 
-            return angle; 
-        }
-        
-        var isOto = config.mainOrient.startsWith('longest');
-        var baseAngle = 0;
-        if (isOto) {
-            baseAngle = getLongestEdgeAngle(polyData);
-            if (baseAngle > 90) baseAngle -= 180; 
-            if (baseAngle < -90) baseAngle += 180;
-        } else if (config.mainOrient.startsWith('horizontal')) { 
-            baseAngle = 90; 
-        } else { 
-            baseAngle = 0; 
-        }
+    function simpanMisiDrone() { 
+        if(!currentDronePolygon || !tempDroneLayer.currentPath) return alert("Gagal menyimpan rute! Pastikan area memadai."); 
+        fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: document.getElementById('droneNama').value, pengupload: currentUser.username, features: [tempDroneLayer.currentPath], geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan!"); batalMisiDrone(); refreshSemuaData(); }); 
+    }
+    function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
-        function buildContinuousTrack(angleDeg, intv, curvePercent) {
+    // --- ALGORITMA BATIMETRI FINAL (LIVE EDIT & BEZIER ORTOGONAL) ---
+    var isDrawingBatimetri = false, currentBatiPolygon = null, tempBatiLayer = L.featureGroup().addTo(map);
+    function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); }
+    function mulaiGambarBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); }
+    function batalMisiBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; if(currentBatiPolygon) map.removeLayer(currentBatiPolygon); tempBatiLayer.clearLayers(); currentBatiPolygon = null; }
+    
+    function updateBatiPreview() {
+        tempBatiLayer.clearLayers(); if(!currentBatiPolygon) return;
+        var interval = parseFloat(document.getElementById('batiInterval').value) || 50;
+        var crossInterval = parseFloat(document.getElementById('batiCrossInterval').value) || 0;
+        var curvePercent = parseFloat(document.getElementById('batiCurve').value) || 100;
+        var mainOrient = document.getElementById('batiMainOrient').value;
+        var polyData = currentBatiPolygon.toGeoJSON();
+        var centroid = turf.centroid(polyData);
+        
+        function getLongestEdgeAngle(poly) { var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; for(var i=0; i<coords.length-1; i++) { var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } } return angle; }
+        
+        var baseAngle = 0; var isOto = mainOrient.startsWith('longest');
+        if (isOto) { baseAngle = getLongestEdgeAngle(polyData); if (baseAngle > 90) baseAngle -= 180; if (baseAngle < -90) baseAngle += 180; } 
+        else if (mainOrient.startsWith('horizontal')) { baseAngle = 90; } else { baseAngle = 0; }
+
+        function buildContinuousTrack(angleDeg, intv, isMainTrack) {
             if(!intv || intv <= 0) return null;
-            var flatPoly = turf.transformRotate(polyData, -angleDeg, {pivot: centroid});
-            var bbox = turf.bbox(flatPoly); 
-            var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
-            
+            var flatPoly = turf.transformRotate(polyData, -angleDeg, {pivot: centroid}), polyLine = turf.polygonToLine(flatPoly);
+            var bbox = turf.bbox(flatPoly); var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
             var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
-            var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'});
-            var numLinesReal = Math.floor(totalHeight / intv);
-            var row_segments = []; 
-            var overshoot = 10; 
+            var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'}), numLinesReal = Math.floor(totalHeight / intv);
+            var row_segments = []; var overshoot = 5; 
+
+            var reverseOrder = false;
+            if (!isOto) { if (isMainTrack) { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } else { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } }
 
             for(var i=0; i<=numLinesReal; i++) {
-                var yPt = turf.destination(ptMin, (i * intv) + (intv/2), 0, {units: 'meters'});
-                var y = yPt.geometry.coordinates[1];
+                var stepDist = reverseOrder ? (totalHeight - (i * intv) - (intv/2)) : (i * intv + (intv/2));
+                if (stepDist < 0 || stepDist > totalHeight) continue;
+                var yPt = turf.destination(ptMin, stepDist, 0, {units: 'meters'}), y = yPt.geometry.coordinates[1];
                 var sweepLine = turf.lineString([[minX - 50, y], [maxX + 50, y]]); 
-                var intersects = turf.lineIntersect(sweepLine, flatPoly);
-
-                var x_coords = [];
-                if(intersects.features.length > 0) { 
-                    intersects.features.forEach(f => x_coords.push(f.geometry.coordinates[0])); 
-                } 
-                else if (turf.booleanPointInPolygon(turf.point([(minX+maxX)/2, y]), flatPoly)) { 
-                    x_coords = [minX, maxX]; 
-                }
-
-                if(x_coords.length > 0) {
-                    var cMinX = Math.min(...x_coords); var cMaxX = Math.max(...x_coords);
-                    var pLeft = turf.destination(turf.point([cMinX, y]), overshoot, -90, {units: 'meters'}).geometry.coordinates;
-                    var pRight = turf.destination(turf.point([cMaxX, y]), overshoot, 90, {units: 'meters'}).geometry.coordinates;
-                    row_segments.push({ left: pLeft, right: pRight, y: y });
-                }
+                var intersects = turf.lineIntersect(sweepLine, polyLine), x_coords = [];
+                if(intersects.features.length > 0) { intersects.features.forEach(f => x_coords.push(f.geometry.coordinates[0])); } else if (turf.booleanPointInPolygon(turf.point([(minX+maxX)/2, y]), flatPoly)) { x_coords = [minX, maxX]; }
+                if(x_coords.length > 0) { var cMinX = Math.min(...x_coords); var cMaxX = Math.max(...x_coords); row_segments.push({ left: turf.destination(turf.point([cMinX, y]), overshoot, -90, {units: 'meters'}).geometry.coordinates, right: turf.destination(turf.point([cMaxX, y]), overshoot, 90, {units: 'meters'}).geometry.coordinates, y: y }); }
             }
 
             if(row_segments.length < 2) return null;
-
             var continuousCoords = []; var goingRight = true;
             for(var i=0; i<row_segments.length; i++) {
                 var row = row_segments[i];
                 if (i > 0) {
-                    var prevRow = row_segments[i-1];
-                    var isRightBulge = !goingRight; 
-                    var p1 = isRightBulge ? prevRow.right : prevRow.left;
-                    var p2 = isRightBulge ? row.right : row.left;
-
+                    var prevRow = row_segments[i-1], isRightBulge = !goingRight; var p1 = isRightBulge ? prevRow.right : prevRow.left, p2 = isRightBulge ? row.right : row.left;
                     if(curvePercent > 0) {
-                        var curveRatio = curvePercent / 100;
-                        var ctrlDist = (intv * 0.6) * curveRatio; 
-                        var ctrlBearing = isRightBulge ? 90 : -90; 
-                        var midY = (p1[1] + p2[1]) / 2;
-                        
+                        var ctrlDist = (intv * 0.6) * (curvePercent / 100); var ctrlBearing = isRightBulge ? 90 : -90; var midY = (p1[1] + p2[1]) / 2;
                         var baseBulgeX = isRightBulge ? Math.max(p1[0], p2[0]) : Math.min(p1[0], p2[0]);
                         var ctrlPt = turf.destination(turf.point([baseBulgeX, midY]), ctrlDist, ctrlBearing, {units: 'meters'}).geometry.coordinates;
-
-                        var numPts = 12;
-                        for(var j=1; j<numPts; j++) {
-                            var t = j / numPts;
-                            var bx = Math.pow(1-t, 2)*p1[0] + 2*(1-t)*t*ctrlPt[0] + Math.pow(t, 2)*p2[0];
-                            var by = Math.pow(1-t, 2)*p1[1] + 2*(1-t)*t*ctrlPt[1] + Math.pow(t, 2)*p2[1];
-                            continuousCoords.push([bx, by]);
-                        }
+                        var numPts = 12; for(var j=1; j<numPts; j++) { var t = j / numPts, bx = Math.pow(1-t, 2)*p1[0] + 2*(1-t)*t*ctrlPt[0] + Math.pow(t, 2)*p2[0], by = Math.pow(1-t, 2)*p1[1] + 2*(1-t)*t*ctrlPt[1] + Math.pow(t, 2)*p2[1]; continuousCoords.push([bx, by]); }
                     }
                 }
-
-                if(goingRight) { continuousCoords.push(row.left); continuousCoords.push(row.right); } 
-                else { continuousCoords.push(row.right); continuousCoords.push(row.left); }
+                if(goingRight) { continuousCoords.push(row.left); continuousCoords.push(row.right); } else { continuousCoords.push(row.right); continuousCoords.push(row.left); }
                 goingRight = !goingRight;
             }
-
             return turf.transformRotate(turf.lineString(continuousCoords), angleDeg, {pivot: centroid});
         }
 
-        var results = [];
-        var mainLine = buildContinuousTrack(baseAngle, config.interval, config.curve);
-        if(mainLine) { mainLine.properties = { type: "Main Lines" }; results.push(mainLine); }
-
-        if(config.crossInterval > 0) {
-            var crossLine = buildContinuousTrack(baseAngle + 90, config.crossInterval, config.curve);
-            if(crossLine) { crossLine.properties = { type: "Cross Lines" }; results.push(crossLine); }
+        var mainLine = buildContinuousTrack(baseAngle, interval, true);
+        if(mainLine) { mainLine.properties = { type: "Main Lines" }; L.geoJSON(mainLine, {style: {color: '#f59e0b', weight: 2}}).addTo(tempBatiLayer); tempBatiLayer.mainLine = mainLine; }
+        if(crossInterval > 0) {
+            var crossLine = buildContinuousTrack(baseAngle + 90, crossInterval, false);
+            if(crossLine) { crossLine.properties = { type: "Cross Lines" }; L.geoJSON(crossLine, {style: {color: '#06b6d4', weight: 2}}).addTo(tempBatiLayer); tempBatiLayer.crossLine = crossLine; }
         }
-
-        return results;
     }
 
-    function tangkapGambarBatimetri(polygonLayer) { var polyGeoJSON = polygonLayer.toGeoJSON(), resultFeatures = generateBatimetriFeatures(polyGeoJSON, batiConfig); if (resultFeatures.length === 0) { alert("Area terlalu kecil/Interval besar!"); map.removeLayer(polygonLayer); return; } lastBatiPolyGeoJSON = polyGeoJSON; lastBatiConfig = Object.assign({}, batiConfig); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: batiConfig.nama, pengupload: currentUser.username, features: resultFeatures, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Lajur Batimetri Dibuat!"); map.removeLayer(polygonLayer); refreshSemuaData(); }); }
-    function prosesEditBatimetri() { lastBatiConfig.interval = parseFloat(document.getElementById('editBatiInterval').value); lastBatiConfig.crossInterval = parseFloat(document.getElementById('editBatiCrossInterval').value); lastBatiConfig.curve = parseFloat(document.getElementById('editBatiCurve').value); var rf = generateBatimetriFeatures(lastBatiPolyGeoJSON, lastBatiConfig); if(!rf || rf.length === 0) return alert("Interval tidak valid."); fetch('/api/run-query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: `DELETE FROM shp_garis WHERE nama_layer = '${lastBatiConfig.nama}'` }) }).then(() => fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: lastBatiConfig.nama, pengupload: currentUser.username, features: rf, geom_type: 'LineString' }) })).then(() => { alert("Diperbarui!"); document.getElementById('modalBatimetri').style.display='none'; refreshSemuaData(); }); }
+    function simpanMisiBatimetri() {
+        if(!currentBatiPolygon || !tempBatiLayer.mainLine) return alert("Rute gagal dibuat! Periksa kembali area dan interval.");
+        var featuresToSave = [tempBatiLayer.mainLine]; if(tempBatiLayer.crossLine) featuresToSave.push(tempBatiLayer.crossLine);
+        fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: document.getElementById('batiNama').value, pengupload: currentUser.username, features: featuresToSave, geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Survey Berhasil Disimpan!"); batalMisiBatimetri(); refreshSemuaData(); });
+    }
 
+    // --- GEOMAN EDIT LISTENER: UPDATE JALUR SECARA REAL-TIME SAAT POLIGON DIGESER ---
     map.on('pm:create', async function (e) {
         var layer = e.layer; 
-        if(isDrawingDroneMode && e.shape === 'Polygon') { isDrawingDroneMode = false; currentDronePolygon = layer; document.getElementById('modalDronePlanner').style.display = 'block'; updateLivePreview(); return; }
-        if(isDrawingBatimetri && e.shape === 'Polygon') { isDrawingBatimetri = false; tangkapGambarBatimetri(layer); return; }
+        if(isDrawingDroneMode && e.shape === 'Polygon') { 
+            isDrawingDroneMode = false; currentDronePolygon = layer; 
+            layer.on('pm:edit', updateDronePreview); layer.on('pm:markerdragend', updateDronePreview);
+            document.getElementById('modalDronePlanner').style.display = 'block'; updateDronePreview(); return; 
+        }
+        if(isDrawingBatimetri && e.shape === 'Polygon') { 
+            isDrawingBatimetri = false; currentBatiPolygon = layer; 
+            layer.on('pm:edit', updateBatiPreview); layer.on('pm:markerdragend', updateBatiPreview);
+            document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); return; 
+        }
         var geojson = layer.toGeoJSON(); var tabel = document.getElementById('targetTabel').value; var attr = {}; attr.id = prompt("ID (Angka):", Math.floor(Math.random() * 90 + 10).toString()); if(!attr.id) { map.removeLayer(layer); return; }
         if(tabel==='jalan') attr.nama_jalan=prompt("Nama Jalan:"); else if(tabel==='landuse') attr.penggunaan=prompt("Lahan:"); else if(tabel==='wilayah') attr.nama_kabupaten=prompt("Kabupaten:"); else if(tabel==='tower') attr.id_provider=prompt("ID Provider:"); else if(tabel.startsWith('shp_')) attr.nama_layer=prompt("Nama Layer:");
         fetch('/api/save-feature', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tabel: tabel, geometry: geojson.geometry, attr: attr, uploader: currentUser.username }) }).then(res => res.json()).then(d => { if(d.status === 'Success') { alert("Tersimpan!"); refreshSemuaData(); } else { map.removeLayer(layer); } }).catch(() => map.removeLayer(layer));
@@ -618,13 +715,6 @@
 
     function prosesUploadSpasial() { var f = document.getElementById('fileShp').files[0]; var btn = document.getElementById('btnProsesShp'); if(!f) return alert("Pilih file terlebih dahulu!"); var ext = f.name.split('.').pop().toLowerCase(); var n = prompt("Beri nama layer untuk data ini:", f.name.replace('.'+ext, '')); if(!n) return; btn.innerHTML = "PROCESSING..."; var r = new FileReader(); if (ext === 'zip') { r.onload = function(e) { shp(e.target.result).then(function(g) { var features = Array.isArray(g) ? g[0].features : g.features; kirimDataSpasial(features, n, btn); }).catch(function(err) { console.error("Error SHPJS:", err); alert("Gagal membaca file ZIP!\nDetail Error: " + err.message); btn.innerHTML = "SIMPAN"; }); }; r.readAsArrayBuffer(f); } else if (ext === 'json' || ext === 'geojson') { r.onload = function(e) { try { var j = JSON.parse(e.target.result); var features = j.features || [j]; kirimDataSpasial(features, n, btn); } catch(err) { alert("Format JSON Error: " + err.message); btn.innerHTML = "SIMPAN"; } }; r.readAsText(f); } else if (ext === 'kml') { r.onload = function(e) { try { var dom = new DOMParser().parseFromString(e.target.result, 'text/xml'); var g = toGeoJSON.kml(dom); kirimDataSpasial(g.features, n, btn); } catch(err) { alert("Format KML Rusak: " + err.message); btn.innerHTML = "SIMPAN"; } }; r.readAsText(f); } else { alert("Format file tidak didukung!"); btn.innerHTML = "SIMPAN"; } }
     function kirimDataSpasial(ft, n, btn) { var geomType = document.querySelector('input[name="shpGeomType"]:checked').value; var uploader = currentUser ? currentUser.username : 'Admin'; fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: n, pengupload: uploader, features: ft, geom_type: geomType }) }).then(res => res.json()).then(d => { if (d.status === 'Success') { alert("Data Tersimpan!"); document.getElementById('modalShp').style.display='none'; } else { alert("Gagal: " + d.error); } btn.innerHTML = "SIMPAN"; refreshSemuaData(); }).catch(err => { alert("Error koneksi Server."); btn.innerHTML = "SIMPAN"; }); }
-
-    var osmbLayer = null; var is3DActive = false;
-    function toggleGedung3D() {
-        var btn = document.getElementById('btn3D'); is3DActive = !is3DActive;
-        if (is3DActive) { btn.style.color = "var(--accent)"; btn.style.borderColor = "var(--accent)"; if (!osmbLayer) osmbLayer = new OSMBuildings(map).load('https://{s}.data.osmbuildings.org/0.2/anonymous/tile/{z}/{x}/{y}.json'); } 
-        else { btn.style.color = "var(--text-main)"; btn.style.borderColor = "var(--border-color)"; if (osmbLayer) { osmbLayer.destroy(); osmbLayer = null; } }
-    }
 </script>
 </body>
 </html>
