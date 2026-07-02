@@ -174,6 +174,7 @@
     <button id="btnHapusShp" class="btn-float"><span class="icon" style="color: var(--danger);">🗑️</span><span class="label" style="color: var(--danger);">Hapus</span></button>
 </div>
 
+<!-- GNSS RTK TRACKING PANEL -->
 <div id="gnss-panel" class="side-panel" style="width: 250px; bottom: 80px; right: 10px; padding: 15px; border-radius: 8px;">
     <h4 style="margin: 0 0 10px 0; font-weight: 700; color: var(--accent); display: flex; justify-content: space-between;">
         <span>🛰️ STATUS GNSS RTK</span>
@@ -242,7 +243,7 @@
                 <div><span>Distance:</span><b id="s_dist">-</b></div>
                 <div><span>No of Strips:</span><b id="s_strip">-</b></div>
                 <div><span>Photo every:</span><b id="s_photo_every">-</b></div>
-                <div><span>Dist between images:</span><b id="s_dist_img">-</b></div>
+                <div><span>Dist between img:</span><b id="s_dist_img">-</b></div>
                 <div><span>Footprint:</span><b id="s_footprint">-</b></div>
                 <div><span>Ground Resolution:</span><b id="s_gsd">-</b></div>
                 <div><span>Dist between lines:</span><b id="s_dist_line">-</b></div>
@@ -256,6 +257,7 @@
     </div>
 </div>
 
+<!-- MODAL BATIMETRI ANTI-ERROR -->
 <div id="modalBatimetri" class="modal-overlay">
     <div class="modal-box">
         <div class="modal-box-header"><span>🌊 Generator Survey / Batimetri</span><span onclick="document.getElementById('modalBatimetri').style.display='none'" style="cursor:pointer">&times;</span></div>
@@ -286,7 +288,15 @@
                 <div style="background: var(--bg-panel); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 10px;">
                     <label style="color: var(--text-main); font-weight: 700;">LAJUR LINTAS (Tegak Lurus)</label>
                     <div class="input-row"><label>Interval (m):</label><input type="number" id="batiCrossInterval" value="150" min="0" oninput="dbBat()"></div>
-                    <p style="font-size:9px; color:var(--text-muted); margin-top:0px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah.</p>
+                    
+                    <div class="input-row"><label>Arah Sapuan Lintas:</label>
+                    <select id="batiCrossOrient" onchange="dbBat()">
+                        <option value="vertical|left-right" selected>Otomatis / Kiri-Kanan</option>
+                        <option value="vertical|right-left">Manual: Kanan-Kiri</option>
+                        <option value="horizontal|top-down">Manual: Atas-Bawah</option>
+                        <option value="horizontal|bottom-up">Manual: Bawah-Atas</option>
+                    </select></div>
+                    <p style="font-size:9px; color:var(--text-muted); margin-top:5px; margin-bottom:0;">*Isi 0 jika hanya ingin 1 arah (Tanpa Jalur Lintas).</p>
                 </div>
 
                 <p style="font-size:10px; color:var(--accent); font-weight:bold; margin:5px 0;">*TIPS: Anda bisa menggeser/mengedit titik poligon di peta untuk merubah jalur secara Live!</p>
@@ -478,7 +488,13 @@
                         let p = `<div style="text-transform:uppercase; font-weight:bold; margin-bottom:5px; border-bottom:1px solid var(--border-color); padding-bottom:5px; color:var(--text-main);">${tabel}</div><table class="popup-table">`; 
                         for(let k in row) { if(k !== 'geometry' && k !== 'geom') { if(k === 'properties' && row[k]) { let propsObj = typeof row[k] === 'string' ? JSON.parse(row[k]) : row[k]; for(let pk in propsObj) p += `<tr><td>${pk}</td><td>: ${propsObj[pk]}</td></tr>`; } else { p += `<tr><td>${k}</td><td>: ${row[k] !== null ? row[k] : '-'}</td></tr>`; } } } 
                         p += `</table>`; 
-                        let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: itemColor, color: "#fff", weight: 1, fillOpacity: 0.8 }) });
+                        
+                        let leafletLayer = L.geoJSON(JSON.parse(row.geometry), { 
+                            pmIgnore: row.geometry.includes("LineString") ? true : false,
+                            style: function() { return { color: itemColor, fillColor: itemColor, weight: row.geometry.includes("Polygon") ? 1 : 2, fillOpacity: 0.5 }; }, 
+                            pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, fillColor: itemColor, color: "#fff", weight: 1, fillOpacity: 0.8, pmIgnore: true }) 
+                        });
+                        
                         let pkField = tabel.startsWith('shp_') ? 'id' : 'id_' + tabel; let featureId = row[pkField];
                         let baseName = row.nama_layer || row.nama_jalan || row.penggunaan || row.nama_kabupaten || row.id_provider || 'Data Umum';
                         leafletLayer.featureId = featureId; leafletLayer.groupName = baseName; leafletLayer.bindPopup(p).addTo(layerGroup); 
@@ -500,123 +516,155 @@
 
     function zoomKeLayer(n) { var b = L.latLngBounds(); layersData[n].eachLayer(l => { if (l.getBounds) b.extend(l.getBounds()); else if (l.getLatLng) b.extend(l.getLatLng()); }); if (b.isValid()) map.flyToBounds(b, { padding: [40, 40] }); }
 
+    // --- ALGORITMA DRONE PLANNER ---
     var isDrawingDroneMode = false, currentDronePolygon = null, tempDroneLayer = L.featureGroup().addTo(map);
     var droneCameras = { 'phantom4rtk': { focal: 8.8, sw: 13.2, sh: 8.8, iw: 5472, ih: 3648 }, 'mavic3e': { focal: 12, sw: 17.3, sh: 13.0, iw: 5280, ih: 3956 } };
 
     function inisiasiModeDrone() { alert("Silakan gambar area poligon di peta untuk batas terbang Drone."); isDrawingDroneMode = true; map.pm.enableDraw('Polygon', { snappable: false, hintlineStyle: { color: '#f59e0b', dashArray: '5,5' }, pathOptions: { color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.2 } }); }
     function updateDronePreview() { 
-        tempDroneLayer.clearLayers(); if(!currentDronePolygon) return; 
-        var cam = droneCameras[document.getElementById('droneCamera').value]; var alt = parseFloat(document.getElementById('droneAlt').value) || 100; var overlap = parseFloat(document.getElementById('droneOverlap').value) || 80; var sidelap = parseFloat(document.getElementById('droneSidelap').value) || 70; var speed = parseFloat(document.getElementById('droneSpeed').value) || 10; var margin = parseFloat(document.getElementById('droneMargin').value) || 0; var angle = parseFloat(document.getElementById('droneAngle').value) || 0; document.getElementById('lblAngle').innerText = angle;
-        if(overlap >= 95) overlap = 95; if(sidelap >= 95) sidelap = 95;
-        var gsd = (alt * 100 * cam.sw) / (cam.focal * cam.iw); var footW = (alt * cam.sw) / cam.focal, footH = (alt * cam.sh) / cam.focal;
-        var spacing = footW * (1 - (sidelap/100)), triggerDist = footH * (1 - (overlap/100)); 
-        if(spacing < 0.1) spacing = 0.1; if(triggerDist < 0.1) triggerDist = 0.1;
-        var polyData = currentDronePolygon.toGeoJSON(); var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid}); 
-        var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3]; 
-        var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'}); 
-        var numLines = Math.floor(distY / spacing) + 1; 
-        if (numLines > 5000) numLines = 5000; 
-        for(let i=0; i<=numLines; i++) { var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1]; var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'}); var pt2 = turf.destination(turf.point([maxX, currentY]), margin + 100, 90, {units: 'meters'}); lines.push(turf.lineString([pt1.geometry.coordinates, pt2.geometry.coordinates])); } 
-        var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid})), continuousCoords = [], flip = false; 
-        rotatedLines.forEach(line => { var split; try { split = turf.lineSplit(line, polyData); } catch(e){} var segments = []; if(split && split.features.length > 0) { split.features.forEach(seg => { if(turf.booleanPointInPolygon(turf.along(seg, turf.length(seg)/2), polyData)) segments.push(seg); }); } else { if(turf.booleanPointInPolygon(turf.along(line, turf.length(line)/2), polyData)) segments.push(line); } if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var bestSeg = segments[0]; if (margin > 0) { var c = bestSeg.geometry.coordinates; if (turf.length(bestSeg, {units: 'meters'}) > 0) { var p1 = turf.point(c[0]), p2 = turf.point(c[c.length-1]), bearing = turf.bearing(p1, p2); var extP1 = turf.destination(p1, margin, bearing - 180, {units: 'meters'}).geometry.coordinates; var extP2 = turf.destination(p2, margin, bearing, {units: 'meters'}).geometry.coordinates; bestSeg = turf.lineString([extP1, ...c.slice(1, -1), extP2]); } } var finalCoords = bestSeg.geometry.coordinates; if(flip) finalCoords.reverse(); continuousCoords.push(...finalCoords); flip = !flip; } }); 
-        if(continuousCoords.length > 1) { 
-            var flightPath = turf.lineString(continuousCoords); var distanceMeters = turf.length(flightPath, {units: 'meters'}), timeSec = distanceMeters / speed, numPics = Math.ceil(distanceMeters / triggerDist), areaM2 = turf.area(polyData);
-            L.geoJSON(flightPath, { style: { color: '#10b981', weight: 2 }, pmIgnore: true }).addTo(tempDroneLayer); L.circleMarker([continuousCoords[0][1], continuousCoords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); L.circleMarker([continuousCoords[continuousCoords.length-1][1], continuousCoords[continuousCoords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
-            document.getElementById('s_area').innerText = Math.round(areaM2) + " m²"; document.getElementById('s_pic').innerText = numPics + " Foto"; document.getElementById('s_time').innerText = Math.floor(timeSec/60) + ":" + Math.round(timeSec%60).toString().padStart(2, '0') + " Menit"; document.getElementById('s_dist').innerText = (distanceMeters/1000).toFixed(2) + " km"; document.getElementById('s_strip').innerText = Math.round(numLines); document.getElementById('s_photo_every').innerText = (triggerDist / speed).toFixed(1) + " Detik"; document.getElementById('s_dist_img').innerText = triggerDist.toFixed(1) + " m"; document.getElementById('s_footprint').innerText = footW.toFixed(1) + " x " + footH.toFixed(1) + " m"; document.getElementById('s_gsd').innerText = gsd.toFixed(2) + " cm/px"; document.getElementById('s_dist_line').innerText = spacing.toFixed(1) + " m";
-            flightPath.properties = { nama_layer: document.getElementById('droneNama').value, gsd: gsd.toFixed(2), overlap: overlap, sidelap: sidelap, altitude_m: alt, speed_ms: speed, total_jarak_km: (distanceMeters/1000).toFixed(2), foto: numPics }; tempDroneLayer.currentPath = flightPath;
-        } else { document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; } 
+        try {
+            tempDroneLayer.clearLayers(); if(!currentDronePolygon) return; 
+            var cam = droneCameras[document.getElementById('droneCamera').value]; var alt = parseFloat(document.getElementById('droneAlt').value) || 100; var overlap = parseFloat(document.getElementById('droneOverlap').value) || 80; var sidelap = parseFloat(document.getElementById('droneSidelap').value) || 70; var speed = parseFloat(document.getElementById('droneSpeed').value) || 10; var margin = parseFloat(document.getElementById('droneMargin').value) || 0; var angle = parseFloat(document.getElementById('droneAngle').value) || 0; document.getElementById('lblAngle').innerText = angle;
+            if(overlap >= 95) overlap = 95; if(sidelap >= 95) sidelap = 95;
+            var gsd = (alt * 100 * cam.sw) / (cam.focal * cam.iw); var footW = (alt * cam.sw) / cam.focal, footH = (alt * cam.sh) / cam.focal;
+            var spacing = footW * (1 - (sidelap/100)), triggerDist = footH * (1 - (overlap/100)); 
+            if(spacing < 0.1) spacing = 0.1; if(triggerDist < 0.1) triggerDist = 0.1;
+            var polyData = currentDronePolygon.toGeoJSON(); var centroid = turf.centroid(polyData), rotatedPoly = turf.transformRotate(polyData, -angle, {pivot: centroid}); 
+            var bbox = turf.bbox(rotatedPoly), minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3]; 
+            var lines = [], refPt = turf.point([minX, minY]), distY = turf.distance([minX, minY], [minX, maxY], {units: 'meters'}); 
+            var numLines = Math.floor(distY / spacing) + 1; 
+            if (numLines > 5000) numLines = 5000; 
+            for(let i=0; i<=numLines; i++) { var stepPt = turf.destination(refPt, i * spacing, 0, {units: 'meters'}), currentY = stepPt.geometry.coordinates[1]; var pt1 = turf.destination(turf.point([minX, currentY]), margin + 100, -90, {units: 'meters'}); var pt2 = turf.destination(turf.point([maxX, currentY]), margin + 100, 90, {units: 'meters'}); lines.push(turf.lineString([pt1.geometry.coordinates, pt2.geometry.coordinates])); } 
+            var rotatedLines = lines.map(line => turf.transformRotate(line, angle, {pivot: centroid})), continuousCoords = [], flip = false; 
+            rotatedLines.forEach(line => { var split; try { split = turf.lineSplit(line, polyData); } catch(e){} var segments = []; if(split && split.features.length > 0) { split.features.forEach(seg => { if(turf.booleanPointInPolygon(turf.along(seg, turf.length(seg)/2), polyData)) segments.push(seg); }); } else { if(turf.booleanPointInPolygon(turf.along(line, turf.length(line)/2), polyData)) segments.push(line); } if(segments.length > 0) { segments.sort((a,b) => turf.length(b) - turf.length(a)); var bestSeg = segments[0]; if (margin > 0) { var c = bestSeg.geometry.coordinates; if (turf.length(bestSeg, {units: 'meters'}) > 0) { var p1 = turf.point(c[0]), p2 = turf.point(c[c.length-1]), bearing = turf.bearing(p1, p2); var extP1 = turf.destination(p1, margin, bearing - 180, {units: 'meters'}).geometry.coordinates; var extP2 = turf.destination(p2, margin, bearing, {units: 'meters'}).geometry.coordinates; bestSeg = turf.lineString([extP1, ...c.slice(1, -1), extP2]); } } var finalCoords = bestSeg.geometry.coordinates; if(flip) finalCoords.reverse(); continuousCoords.push(...finalCoords); flip = !flip; } }); 
+            if(continuousCoords.length > 1) { 
+                var flightPath = turf.lineString(continuousCoords); var distanceMeters = turf.length(flightPath, {units: 'meters'}), timeSec = distanceMeters / speed, numPics = Math.ceil(distanceMeters / triggerDist), areaM2 = turf.area(polyData);
+                L.geoJSON(flightPath, { style: { color: '#10b981', weight: 2 }, pmIgnore: true }).addTo(tempDroneLayer); L.circleMarker([continuousCoords[0][1], continuousCoords[0][0]], {radius: 6, color: '#fff', fillColor: '#10b981', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("START", {permanent:true, direction:'right'}).addTo(tempDroneLayer); L.circleMarker([continuousCoords[continuousCoords.length-1][1], continuousCoords[continuousCoords.length-1][0]], {radius: 6, color: '#fff', fillColor: '#ef4444', fillOpacity: 1, weight: 2, pmIgnore: true}).bindTooltip("END", {permanent:true, direction:'right'}).addTo(tempDroneLayer); 
+                document.getElementById('s_area').innerText = Math.round(areaM2) + " m²"; document.getElementById('s_pic').innerText = numPics + " Foto"; document.getElementById('s_time').innerText = Math.floor(timeSec/60) + ":" + Math.round(timeSec%60).toString().padStart(2, '0') + " Menit"; document.getElementById('s_dist').innerText = (distanceMeters/1000).toFixed(2) + " km"; document.getElementById('s_strip').innerText = Math.round(numLines); document.getElementById('s_photo_every').innerText = (triggerDist / speed).toFixed(1) + " Detik"; document.getElementById('s_dist_img').innerText = triggerDist.toFixed(1) + " m"; document.getElementById('s_footprint').innerText = footW.toFixed(1) + " x " + footH.toFixed(1) + " m"; document.getElementById('s_gsd').innerText = gsd.toFixed(2) + " cm/px"; document.getElementById('s_dist_line').innerText = spacing.toFixed(1) + " m";
+                flightPath.properties = { nama_layer: document.getElementById('droneNama').value, gsd: gsd.toFixed(2), overlap: overlap, sidelap: sidelap, altitude_m: alt, speed_ms: speed, total_jarak_km: (distanceMeters/1000).toFixed(2), foto: numPics }; tempDroneLayer.currentPath = flightPath;
+            } else { document.getElementById('droneStats').innerHTML = `<span style="color:var(--danger)">Area poligon terlalu sempit.</span>`; }
+        } catch(err) { console.error(err); }
     }
     function simpanMisiDrone() { if(!currentDronePolygon || !tempDroneLayer.currentPath) return alert("Gagal menyimpan rute! Pastikan area memadai."); fetch('/api/save-shp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama_layer: document.getElementById('droneNama').value, pengupload: currentUser.username, features: [tempDroneLayer.currentPath], geom_type: 'LineString' }) }).then(res => res.json()).then(d => { alert("Rute Misi Drone Berhasil Disimpan!"); batalMisiDrone(); refreshSemuaData(); }); }
     function batalMisiDrone() { document.getElementById('modalDronePlanner').style.display = 'none'; if(currentDronePolygon) map.removeLayer(currentDronePolygon); tempDroneLayer.clearLayers(); currentDronePolygon = null; }
 
+    // --- ALGORITMA BATIMETRI (ANTI-ERROR & 100% ORTHOGONAL SLICING) ---
     var isDrawingBatimetri = false, currentBatiPolygon = null, tempBatiLayer = L.featureGroup().addTo(map);
     function bukaModalBatimetri() { document.getElementById('modalBatimetri').style.display = 'block'; updateBatiPreview(); }
     function mulaiGambarBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; isDrawingBatimetri = true; map.pm.enableDraw('Polygon', { snappable: false }); }
     function batalMisiBatimetri() { document.getElementById('modalBatimetri').style.display = 'none'; if(currentBatiPolygon) map.removeLayer(currentBatiPolygon); tempBatiLayer.clearLayers(); currentBatiPolygon = null; }
     
     function updateBatiPreview() {
-        tempBatiLayer.clearLayers(); if(!currentBatiPolygon) return;
-        var interval = parseFloat(document.getElementById('batiInterval').value) || 50;
-        var crossInterval = parseFloat(document.getElementById('batiCrossInterval').value) || 0;
-        var curvePercent = parseFloat(document.getElementById('batiCurve').value) || 100;
-        var mainOrient = document.getElementById('batiMainOrient').value;
-        if (interval < 0.1) interval = 0.1;
-        var polyData = currentBatiPolygon.toGeoJSON();
-        var centroid = turf.centroid(polyData);
-        
-        function getLongestEdgeAngle(poly) { var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; for(var i=0; i<coords.length-1; i++) { var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } } return angle; }
-        
-        var baseAngle = 0; var isOto = mainOrient.startsWith('longest');
-        if (isOto) { baseAngle = getLongestEdgeAngle(polyData); if (baseAngle > 90) baseAngle -= 180; if (baseAngle < -90) baseAngle += 180; } 
-        else if (mainOrient.startsWith('horizontal')) { baseAngle = 90; } else { baseAngle = 0; }
-
-        function buildContinuousTrack(angleDeg, intv, isMainTrack) {
-            if(!intv || intv <= 0) return null;
-            var flatPoly = turf.transformRotate(polyData, -angleDeg, {pivot: centroid});
-            var bbox = turf.bbox(flatPoly); var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
-            var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
-            var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'});
-            var numLinesReal = Math.floor(totalHeight / intv);
-            var row_segments = []; var overshoot = 5; 
+        try {
+            tempBatiLayer.clearLayers(); if(!currentBatiPolygon) return;
+            var interval = parseFloat(document.getElementById('batiInterval').value) || 50, crossInterval = parseFloat(document.getElementById('batiCrossInterval').value) || 0, curvePercent = parseFloat(document.getElementById('batiCurve').value) || 100, mainOrient = document.getElementById('batiMainOrient').value;
+            if (interval < 0.1) interval = 0.1;
             
-            if(numLinesReal > 5000) numLinesReal = 5000; 
-
-            var reverseOrder = false;
-            if (!isOto) { if (isMainTrack) { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } else { if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; } }
-
-            for(var i=0; i<=numLinesReal; i++) {
-                var stepDist = reverseOrder ? (totalHeight - (i * intv) - (intv/2)) : (i * intv + (intv/2));
-                if (stepDist < 0 || stepDist > totalHeight) continue;
-                var yPt = turf.destination(ptMin, stepDist, 0, {units: 'meters'});
-                var y = yPt.geometry.coordinates[1];
-                var ptLeft = turf.destination(turf.point([minX, y]), 2000, -90, {units: 'meters'}).geometry.coordinates;
-                var ptRight = turf.destination(turf.point([maxX, y]), 2000, 90, {units: 'meters'}).geometry.coordinates;
-                var sweepLine = turf.lineString([ptLeft, ptRight]); 
-                
-                var split = null; try { split = turf.lineSplit(sweepLine, flatPoly); } catch(e){}
-                var segs = [];
-                if(split && split.features.length > 0) { split.features.forEach(s => { if(turf.booleanPointInPolygon(turf.along(s, turf.length(s)/2), flatPoly)) segs.push(s); }); } 
-                else { if(turf.booleanPointInPolygon(turf.along(sweepLine, turf.length(sweepLine)/2), flatPoly)) segs.push(sweepLine); }
-                
-                if(segs.length > 0) { 
-                    var sBbox = turf.bbox(turf.featureCollection(segs));
-                    var finalLeft = turf.destination(turf.point([sBbox[0], y]), overshoot, -90, {units: 'meters'}).geometry.coordinates;
-                    var finalRight = turf.destination(turf.point([sBbox[2], y]), overshoot, 90, {units: 'meters'}).geometry.coordinates;
-                    row_segments.push({ left: finalLeft, right: finalRight, y: y });
-                }
+            var polyData = currentBatiPolygon.toGeoJSON();
+            var centroid = turf.centroid(polyData);
+            
+            function getLongestEdgeAngle(poly) { 
+                var coords = turf.getCoords(poly)[0]; var maxD = 0, angle = 0; 
+                for(var i=0; i<coords.length-1; i++) { 
+                    var p1 = turf.point(coords[i]), p2 = turf.point(coords[i+1]), d = turf.distance(p1, p2); 
+                    if(d > maxD) { maxD = d; angle = turf.bearing(p1, p2); } 
+                } 
+                return angle; 
             }
+            
+            var baseAngle = 0; var isOto = mainOrient.startsWith('longest');
+            if (isOto) { 
+                baseAngle = getLongestEdgeAngle(polyData); 
+                if (baseAngle > 90) baseAngle -= 180; 
+                if (baseAngle < -90) baseAngle += 180; 
+            } else if (mainOrient.startsWith('horizontal')) { baseAngle = 90; } else { baseAngle = 0; }
 
-            if(row_segments.length < 2) return null;
-            var continuousCoords = []; var goingRight = true;
-            for(var i=0; i<row_segments.length; i++) {
-                var row = row_segments[i];
-                if (i > 0) {
-                    var prevRow = row_segments[i-1], isRightBulge = !goingRight; var p1 = isRightBulge ? prevRow.right : prevRow.left, p2 = isRightBulge ? row.right : row.left;
-                    if(curvePercent > 0) {
-                        var dist = turf.distance(turf.point(p1), turf.point(p2), {units: 'meters'});
-                        if (dist > 0 && dist < intv * 4) {
-                            var pushDist = (dist / 2) * (curvePercent / 100);
-                            var midPt = turf.midpoint(turf.point(p1), turf.point(p2));
-                            var bear = turf.bearing(turf.point(p1), turf.point(p2));
-                            var ctrlBearing = isRightBulge ? bear + 90 : bear - 90;
-                            var ctrlPt = turf.destination(midPt, pushDist, ctrlBearing, {units: 'meters'}).geometry.coordinates;
-                            var numPts = 12; 
-                            for(var j=1; j<numPts; j++) { var t = j / numPts, bx = Math.pow(1-t, 2)*p1[0] + 2*(1-t)*t*ctrlPt[0] + Math.pow(t, 2)*p2[0], by = Math.pow(1-t, 2)*p1[1] + 2*(1-t)*t*ctrlPt[1] + Math.pow(t, 2)*p2[1]; continuousCoords.push([bx, by]); }
-                        }
+            function buildContinuousTrack(angleDeg, intv, isMainTrack) {
+                if(!intv || intv <= 0) return null;
+                var flatPoly = turf.transformRotate(polyData, -angleDeg, {pivot: centroid});
+                var polyLine = turf.polygonToLine(flatPoly);
+                var bbox = turf.bbox(flatPoly); 
+                var minX = bbox[0], minY = bbox[1], maxX = bbox[2], maxY = bbox[3];
+                var ptMin = turf.point([minX, minY]), ptMaxY = turf.point([minX, maxY]);
+                var totalHeight = turf.distance(ptMin, ptMaxY, {units: 'meters'});
+                var numLinesReal = Math.floor(totalHeight / intv);
+                var row_segments = []; var overshoot = 5; 
+                
+                if(numLinesReal > 2000) numLinesReal = 2000; // Pencegah Error Memori
+
+                var reverseOrder = false;
+                if (!isOto) { 
+                    if (isMainTrack) { 
+                        if (mainOrient.includes('top-down') || mainOrient.includes('right-left')) reverseOrder = true; 
+                    } else { 
+                        var crossOrient = document.getElementById('batiCrossOrient') ? document.getElementById('batiCrossOrient').value : '';
+                        if (crossOrient.includes('top-down') || crossOrient.includes('right-left')) reverseOrder = true; 
+                    } 
+                }
+
+                // DYNAMIC PADDING agar garis iris tidak pernah keluar jalur bumi
+                var pad = Math.max((maxX - minX) * 0.5, 0.02);
+
+                for(var i=0; i<=numLinesReal; i++) {
+                    var stepDist = reverseOrder ? (totalHeight - (i * intv) - (intv/2)) : (i * intv + (intv/2));
+                    if (stepDist < 0 || stepDist > totalHeight) continue;
+                    var yPt = turf.destination(ptMin, stepDist, 0, {units: 'meters'});
+                    var y = yPt.geometry.coordinates[1];
+                    
+                    var sweepLine = turf.lineString([[minX - pad, y], [maxX + pad, y]]); 
+                    var split = null; try { split = turf.lineSplit(sweepLine, polyLine); } catch(e){}
+                    var x_coords = [];
+                    
+                    if(split && split.features.length > 0) { 
+                        split.features.forEach(f => {
+                            if (f.geometry.type === 'LineString') {
+                                x_coords.push(f.geometry.coordinates[0][0]);
+                                x_coords.push(f.geometry.coordinates[f.geometry.coordinates.length-1][0]);
+                            }
+                        }); 
+                    }
+                    
+                    var intersects = turf.lineIntersect(sweepLine, polyLine);
+                    if (intersects.features.length > 0) {
+                        intersects.features.forEach(f => x_coords.push(f.geometry.coordinates[0]));
+                    } else if (turf.booleanPointInPolygon(turf.point([(minX+maxX)/2, y]), flatPoly)) { 
+                        x_coords.push(minX); x_coords.push(maxX); 
+                    }
+
+                    if(x_coords.length > 0) { 
+                        var cMinX = Math.min(...x_coords); var cMaxX = Math.max(...x_coords); 
+                        var pLeft = turf.destination(turf.point([cMinX, y]), overshoot, -90, {units: 'meters'}).geometry.coordinates;
+                        var pRight = turf.destination(turf.point([cMaxX, y]), overshoot, 90, {units: 'meters'}).geometry.coordinates;
+                        row_segments.push({ left: pLeft, right: pRight, y: y }); 
                     }
                 }
-                if(goingRight) { continuousCoords.push(row.left); continuousCoords.push(row.right); } else { continuousCoords.push(row.right); continuousCoords.push(row.left); }
-                goingRight = !goingRight;
-            }
-            return turf.transformRotate(turf.lineString(continuousCoords), angleDeg, {pivot: centroid});
-        }
 
-        var mainLine = buildContinuousTrack(baseAngle, interval, true);
-        if(mainLine) { mainLine.properties = { type: "Main Lines" }; L.geoJSON(mainLine, {style: {color: '#f59e0b', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.mainLine = mainLine; }
-        if(crossInterval > 0) {
-            var crossLine = buildContinuousTrack(baseAngle + 90, crossInterval, false);
-            if(crossLine) { crossLine.properties = { type: "Cross Lines" }; L.geoJSON(crossLine, {style: {color: '#06b6d4', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.crossLine = crossLine; }
-        }
+                if(row_segments.length < 2) return null;
+                var continuousCoords = []; var goingRight = true;
+                for(var i=0; i<row_segments.length; i++) {
+                    var row = row_segments[i];
+                    if (i > 0) {
+                        var prevRow = row_segments[i-1], isRightBulge = !goingRight; var p1 = isRightBulge ? prevRow.right : prevRow.left, p2 = isRightBulge ? row.right : row.left;
+                        if(curvePercent > 0) {
+                            var ctrlDist = (intv * 0.6) * (curvePercent / 100); var ctrlBearing = isRightBulge ? 90 : -90; var midY = (p1[1] + p2[1]) / 2;
+                            var baseBulgeX = isRightBulge ? Math.max(p1[0], p2[0]) : Math.min(p1[0], p2[0]);
+                            var ctrlPt = turf.destination(turf.point([baseBulgeX, midY]), ctrlDist, ctrlBearing, {units: 'meters'}).geometry.coordinates;
+                            var numPts = 12; for(var j=1; j<numPts; j++) { var t = j / numPts, bx = Math.pow(1-t, 2)*p1[0] + 2*(1-t)*t*ctrlPt[0] + Math.pow(t, 2)*p2[0], by = Math.pow(1-t, 2)*p1[1] + 2*(1-t)*t*ctrlPt[1] + Math.pow(t, 2)*p2[1]; continuousCoords.push([bx, by]); }
+                        }
+                    }
+                    if(goingRight) { continuousCoords.push(row.left); continuousCoords.push(row.right); } else { continuousCoords.push(row.right); continuousCoords.push(row.left); }
+                    goingRight = !goingRight;
+                }
+                return turf.transformRotate(turf.lineString(continuousCoords), angleDeg, {pivot: centroid});
+            }
+
+            var mainLine = buildContinuousTrack(baseAngle, interval, true);
+            if(mainLine) { mainLine.properties = { type: "Main Lines" }; L.geoJSON(mainLine, {style: {color: '#f59e0b', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.mainLine = mainLine; }
+            if(crossInterval > 0) {
+                var crossLine = buildContinuousTrack(baseAngle + 90, crossInterval, false);
+                if(crossLine) { crossLine.properties = { type: "Cross Lines" }; L.geoJSON(crossLine, {style: {color: '#06b6d4', weight: 2}, pmIgnore: true}).addTo(tempBatiLayer); tempBatiLayer.crossLine = crossLine; }
+            }
+        } catch(err) { console.error(err); }
     }
 
     function simpanMisiBatimetri() {
